@@ -50,9 +50,9 @@ pub const TypeRegistry = struct {
 
         entry.value_ptr.* = try switch (@typeInfo(T)) {
             .int => self.registerInt(T),
+            .float => self.registerFloat(T),
             .@"struct" => self.registerStruct(T),
             .bool,
-            .float,
             .pointer,
             .array,
             .optional,
@@ -100,6 +100,14 @@ pub const TypeRegistry = struct {
             .bits = info.bits,
             .signedness = signedness,
             .is_pointer_sized = is_pointer_sized,
+        } };
+    }
+
+    fn registerFloat(self: *Self, comptime T: type) !Type {
+        _ = self;
+        const info = @typeInfo(T).float;
+        return Type{ .float = .{
+            .bits = info.bits,
         } };
     }
 

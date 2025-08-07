@@ -43,6 +43,7 @@ pub const Type = union(enum) {
         return switch (self.*) {
             .@"struct" => |*t| t.name,
             .int => |*t| t.typeName(),
+            .float => |*t| t.typeName(),
             else => @tagName(self.*),
         };
     }
@@ -50,7 +51,6 @@ pub const Type = union(enum) {
 
 /// Runtime equivalent of `std.builtin.Type.Int`.
 pub const Int = struct {
-    // TODO
     signedness: Signedness,
     bits: u16,
     is_pointer_sized: bool,
@@ -99,8 +99,18 @@ pub const Int = struct {
 
 /// Runtime equivalent of `std.builtin.Type.Float`.
 pub const Float = struct {
-    // TODO
     bits: u16,
+
+    pub fn typeName(self: Float) []const u8 {
+        switch (self.bits) {
+            16 => return @typeName(f16),
+            32 => return @typeName(f32),
+            64 => return @typeName(f64),
+            80 => return @typeName(f80),
+            128 => return @typeName(f128),
+            else => @panic("unsupported float width"),
+        }
+    }
 };
 
 /// Runtime equivalent of `std.builtin.Type.Pointer`.

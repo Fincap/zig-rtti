@@ -13,7 +13,7 @@ const OtherStruct = struct {
 
 const TestStruct = struct {
     // text: []const u8 = "my string",
-    num: u32 = 32,
+    num: f16 = my_float,
     // other: OtherStruct = .{},
 };
 

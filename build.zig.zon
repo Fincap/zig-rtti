@@ -1,0 +1,20 @@
+.{
+    .name = .zrtti,
+    .version = "0.0.0",
+    .fingerprint = 0x98b3c2e60dedf063,
+    .minimum_zig_version = "0.14.1",
+
+    .dependencies = .{
+        // See `zig fetch --save <url>` for a command-line interface for adding dependencies.
+    },
+
+    // Specifies the set of files and directories that are included in this package.
+    // Paths are relative to the build root. Use the empty string (`""`) to refer to
+    // the build root itself.
+    // A directory listed here means that all files within, recursively, are included.
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

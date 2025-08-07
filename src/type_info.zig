@@ -42,6 +42,7 @@ pub const Type = union(enum) {
     pub fn typeName(self: *Type) []const u8 {
         return switch (self.*) {
             .@"struct" => |*t| t.name,
+            .int => |*t| t.typeName(),
             else => @tagName(self.*),
         };
     }
@@ -53,6 +54,47 @@ pub const Int = struct {
     signedness: Signedness,
     bits: u16,
     is_pointer_sized: bool,
+
+    pub fn typeName(self: Int) []const u8 {
+        switch (self.bits) {
+            8 => {
+                if (self.signedness == .signed) {
+                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(i8);
+                } else {
+                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u8);
+                }
+            },
+            16 => {
+                if (self.signedness == .signed) {
+                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(i16);
+                } else {
+                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u16);
+                }
+            },
+            32 => {
+                if (self.signedness == .signed) {
+                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(i32);
+                } else {
+                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u32);
+                }
+            },
+            64 => {
+                if (self.signedness == .signed) {
+                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(u64);
+                } else {
+                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u64);
+                }
+            },
+            128 => {
+                if (self.signedness == .signed) {
+                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(i128);
+                } else {
+                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u128);
+                }
+            },
+            else => @panic("arbitrary bit-width integers not supported"),
+        }
+    }
 };
 
 /// Runtime equivalent of `std.builtin.Type.Float`.
@@ -62,6 +104,8 @@ pub const Float = struct {
 };
 
 /// Runtime equivalent of `std.builtin.Type.Pointer`.
+///
+/// e.g. []const u8 -> {size: .slice, is_const: true, alignment: 1, child: u8}
 pub const Pointer = struct {
     // TODO
     size: Size,
@@ -78,6 +122,8 @@ pub const Pointer = struct {
 };
 
 /// Runtime equivalent of `std.builtin.Type.Array`.
+///
+/// e.g. [5]u8 -> {len: 5, child: u8}
 pub const Array = struct {
     // TODO
     len: usize,

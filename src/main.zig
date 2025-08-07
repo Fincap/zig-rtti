@@ -18,8 +18,6 @@ const TestStruct = struct {
 };
 
 pub fn main() !void {
-    std.debug.print("{d}\n", .{@sizeOf(type_info.Type)});
-
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const allocator = arena.allocator();
 

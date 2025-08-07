@@ -14,7 +14,7 @@ pub const TypeRegistry = struct {
 
     allocator: Allocator,
     registered_types: std.AutoHashMapUnmanaged(TypeId, Type) = .empty,
-    type_names: std.StringArrayHashMapUnmanaged(TypeId) = .empty,
+    type_names: std.StringHashMapUnmanaged(TypeId) = .empty,
     formatters: std.AutoHashMapUnmanaged(TypeId, CustomFormatter) = .empty,
 
     pub fn init(allocator: Allocator) Self {
@@ -47,6 +47,7 @@ pub const TypeRegistry = struct {
         // are registered, but I need to check myself on that assumption)
         const type_name = @typeName(T);
         try self.type_names.put(self.allocator, type_name, type_id);
+        errdefer _ = self.type_names.remove(type_name);
 
         entry.value_ptr.* = try switch (@typeInfo(T)) {
             .int => self.registerInt(T),

@@ -2,6 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const RTTIError = @import("root.zig").RTTIError;
+const TypeRegistry = @import("type_registry.zig").TypeRegistry;
 
 pub const TypeId = usize;
 
@@ -36,6 +37,13 @@ pub const Type = union(enum) {
             .@"struct" => |*t| t.deinit(allocator),
             else => {},
         }
+    }
+
+    pub fn typeName(self: *Type) []const u8 {
+        return switch (self.*) {
+            .@"struct" => |*t| t.name,
+            else => @tagName(self.*),
+        };
     }
 };
 
@@ -86,8 +94,7 @@ pub const Array = struct {
 /// - `size`: `usize`
 /// - `alignment`: `usize`
 ///
-/// Allocated fields will be owned by the `TypeRegistry` that created this struct, unless it was
-/// manually created by the user.
+/// Allocated fields are be owned by the `TypeRegistry` that created this struct.
 pub const Struct = struct {
     const Self = @This();
 
@@ -97,20 +104,21 @@ pub const Struct = struct {
     size: usize,
     alignment: usize,
 
-    pub fn init(comptime T: type, allocator: Allocator) !Self {
+    pub fn init(comptime T: type, registry: *TypeRegistry) !Self {
         const struct_info = @typeInfo(T).@"struct";
-        const fields = try allocator.alloc(StructField, struct_info.fields.len);
+        const fields = try registry.allocator.alloc(StructField, struct_info.fields.len);
         inline for (struct_info.fields, 0..) |field, i| {
+            const field_type = try registry.registerType(field.type);
             fields[i] = StructField{
                 .name = field.name,
-                .type_name = @typeName(field.type),
+                .type = field_type,
                 .default_value_ptr = field.default_value_ptr,
                 .size = @sizeOf(field.type),
                 .alignment = field.alignment,
                 .offset = @offsetOf(T, field.name),
             };
         }
-        const decls = try allocator.alloc(Declaration, struct_info.decls.len);
+        const decls = try registry.allocator.alloc(Declaration, struct_info.decls.len);
         inline for (struct_info.decls, 0..) |decl, i| {
             decls[i] = Declaration{ .name = decl.name };
         }
@@ -190,7 +198,7 @@ pub const StructField = struct {
     const Self = @This();
 
     name: []const u8,
-    type_name: []const u8, // TODO: rather than pointing to a string, keep an ID to an interned arena?
+    type: *Type,
     default_value_ptr: ?*const anyopaque,
     size: usize,
     alignment: usize,
@@ -198,7 +206,7 @@ pub const StructField = struct {
 
     pub fn format(self: StructField, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         _ = .{ fmt, options };
-        try writer.print("{}{{ .name = \"{s}\", .type_name = \"{s}\", .default_value_ptr = {*}, size = {d}, alignment = {d}, offset = {d} }}", .{ StructField, self.name, self.type_name, self.default_value_ptr, self.size, self.alignment, self.offset });
+        try writer.print("{}{{ .name = \"{s}\", .type_name = \"{s}\", .default_value_ptr = {*}, size = {d}, alignment = {d}, offset = {d} }}", .{ StructField, self.name, self.type.typeName(), self.default_value_ptr, self.size, self.alignment, self.offset });
     }
 };
 
@@ -304,6 +312,9 @@ pub fn isOptional(type_name: []const u8) bool {
     return std.mem.startsWith(u8, type_name, "?");
 }
 
+// struct, enum, union, or opaque
 pub inline fn hasMethod(comptime T: type, comptime method: []const u8) bool {
+    const t = @typeInfo(T);
+    if (t != .@"struct" and t != .@"enum" and t != .@"union" and t != .@"opaque") return false;
     return @hasDecl(T, method) and @typeInfo(@TypeOf(@field(T, method))) == .@"fn";
 }

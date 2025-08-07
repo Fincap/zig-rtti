@@ -12,9 +12,9 @@ const OtherStruct = struct {
 };
 
 const TestStruct = struct {
-    text: []const u8 = "my string",
+    // text: []const u8 = "my string",
     num: u32 = 32,
-    other: OtherStruct = .{},
+    // other: OtherStruct = .{},
 };
 
 pub fn main() !void {

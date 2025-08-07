@@ -11,7 +11,7 @@ pub const CustomFormatter = *const fn (struct_ptr: *const anyopaque, writer: std
 /// TODO: cleanup, ported out of `Struct` definition
 pub fn tryFormatStruct(registry: *const TypeRegistry, info: *const Struct, struct_ptr: *const anyopaque, writer: std.io.AnyWriter) RTTIError!void {
     for (info.fields, 0..) |field, i| {
-        const option = if (type_info.isOptional(field.type_name)) "?" else "";
+        const option = if (field.type.* == .optional) "?" else "";
         writer.print("{s}{s}: ", .{ field.name, option }) catch return error.FormatError;
         try tryFormatField(registry, info, struct_ptr, field.name, writer);
         if (i < info.fields.len - 1) writer.writeAll(", ") catch return error.FormatError;
@@ -29,7 +29,7 @@ pub fn tryFormatField(registry: *const TypeRegistry, info: *const Struct, struct
 
     const slice = info.getFieldSliceIndexed(struct_ptr, index);
 
-    try formatSlice(registry, field.type_name, slice, writer);
+    try formatSlice(registry, field.type.typeName(), slice, writer);
 }
 
 pub fn formatSlice(registry: *const TypeRegistry, type_name: []const u8, slice: []const u8, writer: std.io.AnyWriter) RTTIError!void {

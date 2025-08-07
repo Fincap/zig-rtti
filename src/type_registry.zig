@@ -49,9 +49,9 @@ pub const TypeRegistry = struct {
         try self.type_names.put(self.allocator, type_name, type_id);
 
         entry.value_ptr.* = try switch (@typeInfo(T)) {
+            .int => self.registerInt(T),
             .@"struct" => self.registerStruct(T),
             .bool,
-            .int,
             .float,
             .pointer,
             .array,
@@ -59,7 +59,7 @@ pub const TypeRegistry = struct {
             .@"enum",
             .@"union",
             .@"fn",
-            => @compileError("unimplemented"),
+            => @compileError("register type for " ++ @typeName(T) ++ " unimplemented"),
             else => @compileError("cannot register comptime-only type"),
         };
 
@@ -88,15 +88,25 @@ pub const TypeRegistry = struct {
         return self.registered_types.contains(typeId(T));
     }
 
-    fn registerStruct(self: *Self, comptime T: type) !Type {
-        const @"struct" = try Struct.init(T, self.allocator);
+    fn registerInt(self: *Self, comptime T: type) !Type {
+        _ = self;
+        const info = @typeInfo(T).int;
+        const signedness = switch (info.signedness) {
+            .signed => type_info.Signedness.signed,
+            .unsigned => type_info.Signedness.unsigned,
+        };
+        return Type{ .int = .{ .bits = info.bits, .signedness = signedness } };
+    }
 
+    fn registerStruct(self: *Self, comptime T: type) !Type {
         // Recursively register struct's fields that are also structs
         inline for (@typeInfo(T).@"struct".fields) |field| {
             if (@typeInfo(field.type) == .@"struct" and !self.isTypeRegistered(field.type)) {
                 _ = try self.registerType(field.type);
             }
         }
+
+        const @"struct" = try Struct.init(T, self);
         return Type{ .@"struct" = @"struct" };
     }
 

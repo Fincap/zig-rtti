@@ -50,11 +50,11 @@ pub const TypeRegistry = struct {
         errdefer _ = self.type_names.remove(type_name);
 
         entry.value_ptr.* = try switch (@typeInfo(T)) {
+            .bool => self.registerBool(T),
             .int => self.registerInt(T),
             .pointer => self.registerPointer(T),
             .float => self.registerFloat(T),
             .@"struct" => self.registerStruct(T),
-            .bool,
             .array,
             .optional,
             .@"enum",
@@ -87,6 +87,11 @@ pub const TypeRegistry = struct {
 
     pub fn isTypeRegistered(self: *const Self, comptime T: type) bool {
         return self.registered_types.contains(typeId(T));
+    }
+
+    fn registerBool(self: *Self, comptime T: type) !Type {
+        _ = .{ self, T };
+        return Type{ .bool = {} };
     }
 
     fn registerInt(self: *Self, comptime T: type) !Type {

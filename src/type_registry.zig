@@ -95,7 +95,12 @@ pub const TypeRegistry = struct {
             .signed => type_info.Signedness.signed,
             .unsigned => type_info.Signedness.unsigned,
         };
-        return Type{ .int = .{ .bits = info.bits, .signedness = signedness } };
+        const is_pointer_sized = (T == usize or T == isize);
+        return Type{ .int = .{
+            .bits = info.bits,
+            .signedness = signedness,
+            .is_pointer_sized = is_pointer_sized,
+        } };
     }
 
     fn registerStruct(self: *Self, comptime T: type) !Type {

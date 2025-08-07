@@ -180,7 +180,7 @@ pub const Struct = struct {
         allocator.free(self.decls);
     }
 
-    pub fn getFieldPtr(self: *const Self, struct_ptr: *anyopaque, field_name: []const u8) ?*anyopaque {
+    pub fn getFieldPtr(self: *const Self, struct_ptr: *const anyopaque, field_name: []const u8) ?*anyopaque {
         if (self.getFieldIndex(field_name)) |i| {
             const field = self.fields[i];
             return @ptrFromInt(@intFromPtr(struct_ptr) + field.offset);
@@ -188,7 +188,7 @@ pub const Struct = struct {
         return null;
     }
 
-    pub fn getFieldSlice(self: *const Self, struct_ptr: *anyopaque, field_name: []const u8) ?[]const u8 {
+    pub fn getFieldSlice(self: *const Self, struct_ptr: *const anyopaque, field_name: []const u8) ?[]const u8 {
         if (self.getFieldIndex(field_name)) |i| {
             return self.getFieldSliceIndexed(struct_ptr, i);
         }
@@ -214,7 +214,7 @@ pub const Struct = struct {
         return null;
     }
 
-    pub fn getSlice(self: *const Self, struct_ptr: *anyopaque) []const u8 {
+    pub fn getSlice(self: *const Self, struct_ptr: *const anyopaque) []const u8 {
         var slice: []const u8 = undefined;
         slice.ptr = @ptrCast(@alignCast(struct_ptr));
         slice.len = self.size;

@@ -14,7 +14,7 @@ const OtherStruct = struct {
 const TestStruct = struct {
     // text: []const u8 = "my string",
     num: f16 = my_float,
-    // other: OtherStruct = .{},
+    other: OtherStruct = .{},
 };
 
 pub fn main() !void {
@@ -26,5 +26,5 @@ pub fn main() !void {
     const my_struct = TestStruct{};
     const info = try registry.registerType(TestStruct);
     try fmt.tryFormatStruct(&registry, &info.@"struct", &my_struct, std.io.getStdOut().writer().any());
-    std.debug.print("\n{}", .{info.*});
+    // std.debug.print("\n{}", .{info.*});
 }

@@ -39,12 +39,13 @@ pub const Type = union(enum) {
         }
     }
 
-    pub fn typeName(self: *Type) []const u8 {
-        return switch (self.*) {
-            .@"struct" => |*t| t.name,
-            .int => |*t| t.typeName(),
-            .float => |*t| t.typeName(),
-            else => @tagName(self.*),
+    pub fn typeName(self: Type) []const u8 {
+        return switch (self) {
+            .@"struct" => |t| t.name,
+            .int => |t| t.typeName(),
+            .float => |t| t.typeName(),
+            .pointer => |t| t.typeName(),
+            else => @tagName(self),
         };
     }
 };
@@ -117,7 +118,6 @@ pub const Float = struct {
 ///
 /// e.g. []const u8 -> {size: .slice, is_const: true, alignment: 1, child: u8}
 pub const Pointer = struct {
-    // TODO
     size: Size,
     is_const: bool,
     alignment: u16,
@@ -129,6 +129,19 @@ pub const Pointer = struct {
         slice,
         c,
     };
+
+    pub fn typeName(self: Pointer) []const u8 {
+        _ = self;
+        return "pointer";
+        // const prefix = switch (self.size) {
+        //     .one => "*",
+        //     .many => "[*]",
+        //     .slice => "[]",
+        //     .c => "[*c]",
+        // };
+        // const is_const = if (self.is_const) "const" else "";
+        // return std.fmt.comptimePrint("{s}{s} {s}", .{ prefix, is_const, self.child.typeName() });
+    }
 };
 
 /// Runtime equivalent of `std.builtin.Type.Array`.
@@ -161,6 +174,7 @@ pub const Struct = struct {
     size: usize,
     alignment: usize,
 
+    // TODO: inline this into `TypeRegistry.registerStruct`
     pub fn init(comptime T: type, registry: *TypeRegistry) !Self {
         const struct_info = @typeInfo(T).@"struct";
         const fields = try registry.allocator.alloc(StructField, struct_info.fields.len);

@@ -50,10 +50,10 @@ pub const TypeRegistry = struct {
 
         entry.value_ptr.* = try switch (@typeInfo(T)) {
             .int => self.registerInt(T),
+            .pointer => self.registerPointer(T),
             .float => self.registerFloat(T),
             .@"struct" => self.registerStruct(T),
             .bool,
-            .pointer,
             .array,
             .optional,
             .@"enum",
@@ -108,6 +108,23 @@ pub const TypeRegistry = struct {
         const info = @typeInfo(T).float;
         return Type{ .float = .{
             .bits = info.bits,
+        } };
+    }
+
+    fn registerPointer(self: *Self, comptime T: type) !Type {
+        const info = @typeInfo(T).pointer;
+        const child = try self.registerType(info.child);
+        const size = switch (info.size) {
+            .one => type_info.Pointer.Size.one,
+            .many => type_info.Pointer.Size.many,
+            .slice => type_info.Pointer.Size.slice,
+            .c => type_info.Pointer.Size.c,
+        };
+        return Type{ .pointer = .{
+            .size = size,
+            .is_const = info.is_const,
+            .alignment = info.alignment,
+            .child = child,
         } };
     }
 

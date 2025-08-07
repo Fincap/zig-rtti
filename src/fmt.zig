@@ -3,36 +3,77 @@ const std = @import("std");
 const RTTIError = @import("root.zig").RTTIError;
 const type_info = @import("type_info.zig");
 const Struct = type_info.Struct;
+const StructField = type_info.StructField;
+const Type = type_info.Type;
 const TypeRegistry = @import("type_registry.zig").TypeRegistry;
 const util = @import("util.zig");
 
 pub const CustomFormatter = *const fn (struct_ptr: *const anyopaque, writer: std.io.AnyWriter) RTTIError!void;
 
-/// TODO: cleanup, ported out of `Struct` definition
-pub fn tryFormatStruct(registry: *const TypeRegistry, info: *const Struct, struct_ptr: *const anyopaque, writer: std.io.AnyWriter) RTTIError!void {
-    for (info.fields, 0..) |field, i| {
-        const option = if (field.type.* == .optional) "?" else "";
-        writer.print("{s}{s}: ", .{ field.name, option }) catch return error.FormatError;
-        try tryFormatField(registry, info, struct_ptr, field.name, writer);
+pub fn tryFormatStruct(registry: *const TypeRegistry, info: *const Struct, ptr: *const anyopaque, writer: std.io.AnyWriter) RTTIError!void {
+    for (info.fields, 0..) |field_info, i| {
+        const field_slice = info.getFieldSliceIndexed(ptr, i);
+        const option_prefix = if (field_info.type.* == .optional) "?" else "";
+        writer.print("{s}{s}: ", .{ field_info.name, option_prefix }) catch return error.FormatError;
+        try tryFormatField(registry, &field_info, field_slice, writer);
         if (i < info.fields.len - 1) writer.writeAll(", ") catch return error.FormatError;
     }
 }
 
-/// TODO: cleanup, ported out of `Struct` definition
-pub fn tryFormatField(registry: *const TypeRegistry, info: *const Struct, struct_ptr: *const anyopaque, field_name: []const u8, writer: std.io.AnyWriter) RTTIError!void {
-    const maybe_index = info.getFieldIndex(field_name);
-    if (maybe_index == null) {
-        return error.InvalidField;
-    }
-    const index = maybe_index.?;
-    const field = info.fields[index];
-
-    const slice = info.getFieldSliceIndexed(struct_ptr, index);
-
-    try formatSlice(registry, field.type.typeName(), slice, writer);
+pub fn tryFormatField(registry: *const TypeRegistry, info: *const StructField, slice: []const u8, writer: std.io.AnyWriter) RTTIError!void {
+    try formatSlice(registry, info.type, slice, writer);
 }
 
-pub fn formatSlice(registry: *const TypeRegistry, type_name: []const u8, slice: []const u8, writer: std.io.AnyWriter) RTTIError!void {
+pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []const u8, writer: std.io.AnyWriter) RTTIError!void {
+    // Custom formatter
+    if (registry.getTypeId(info.typeName())) |type_id| {
+        if (registry.formatters.get(type_id)) |formatter| {
+            try formatter(slice.ptr, writer);
+            return;
+        }
+    }
+
+    switch (info.*) {
+        .bool => {
+            const value = slice[0] != 0;
+            writer.print("{}", .{value}) catch return error.FormatError;
+        },
+        .int, .float => {
+            // const number = util.numberFromBytes(T, slice);
+            // writer.print("{d}", .{number}) catch return error.FormatError;
+        },
+        .pointer => |*p| {
+            _ = p;
+            // const pointee_name = if (std.mem.startsWith(u8, type_name[1..], "const ")) type_name[7..] else type_name[1..];
+            // const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
+            // const len = type_info.runtimeSizeOf(pointee_name).?;
+            // const inner_slice = util.makeSlice(u8, ptr, len);
+            // writer.writeAll("*") catch return error.FormatError;
+            // try formatSlice(registry, pointee_name, inner_slice, writer);
+        },
+        .array => {
+            // const optional_size = type_info.runtimeSizeOf(type_name).?;
+            // const option_offset: usize = optional_size / 2;
+            // const is_some = slice[option_offset] != 0;
+            // if (is_some) {
+            //     try formatSlice(registry, type_name[1..], slice[0..option_offset], writer);
+            // } else {
+            //     writer.writeAll("null") catch return error.FormatError;
+            // }
+        },
+        .@"struct" => {
+            writer.writeAll("{ ") catch return error.FormatError;
+            try tryFormatStruct(registry, &info.@"struct", @ptrCast(slice.ptr), writer);
+            writer.writeAll(" }") catch return error.FormatError;
+        },
+        .optional => {},
+        .@"enum" => {},
+        .@"union" => {},
+        .@"fn" => {},
+    }
+}
+
+pub fn formatSliceOld(registry: *const TypeRegistry, type_name: []const u8, slice: []const u8, writer: std.io.AnyWriter) RTTIError!void {
     if (registry.getTypeId(type_name)) |type_id| {
         // Custom formatter
         if (registry.formatters.get(type_id)) |formatter| {

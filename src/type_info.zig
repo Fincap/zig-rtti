@@ -57,44 +57,17 @@ pub const Int = struct {
     is_pointer_sized: bool,
 
     pub fn typeName(self: Int) []const u8 {
-        switch (self.bits) {
-            8 => {
-                if (self.signedness == .signed) {
-                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(i8);
-                } else {
-                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u8);
-                }
-            },
-            16 => {
-                if (self.signedness == .signed) {
-                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(i16);
-                } else {
-                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u16);
-                }
-            },
-            32 => {
-                if (self.signedness == .signed) {
-                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(i32);
-                } else {
-                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u32);
-                }
-            },
-            64 => {
-                if (self.signedness == .signed) {
-                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(u64);
-                } else {
-                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u64);
-                }
-            },
-            128 => {
-                if (self.signedness == .signed) {
-                    return if (self.is_pointer_sized) @typeName(isize) else @typeName(i128);
-                } else {
-                    return if (self.is_pointer_sized) @typeName(usize) else @typeName(u128);
-                }
-            },
-            else => @panic("arbitrary bit-width integers not supported"),
+        if (self.is_pointer_sized) {
+            return if (self.signedness == .signed) @typeName(isize) else @typeName(usize);
         }
+        return switch (self.bits) {
+            8 => if (self.signedness == .signed) @typeName(i8) else @typeName(u8),
+            16 => if (self.signedness == .signed) @typeName(i16) else @typeName(u16),
+            32 => if (self.signedness == .signed) @typeName(i32) else @typeName(u32),
+            64 => if (self.signedness == .signed) @typeName(i8) else @typeName(u8),
+            128 => if (self.signedness == .signed) @typeName(i8) else @typeName(u8),
+            else => @panic("arbitrary bit-width integers not supported"),
+        };
     }
 };
 

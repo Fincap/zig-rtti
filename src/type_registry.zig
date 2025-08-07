@@ -46,31 +46,30 @@ pub const TypeRegistry = struct {
         // Map type name -> type ID (*feels* like this needs to be done before the type's child types
         // are registered, but I need to check myself on that assumption)
         const type_name = @typeName(T);
-        const name_entry = try self.type_names.getOrPut(self.allocator, type_name);
-        name_entry.value_ptr.* = type_id;
+        try self.type_names.put(self.allocator, type_name, type_id);
 
-        entry.value_ptr.* = try self.registerStruct(T); // TODO: replace with switch
+        entry.value_ptr.* = try switch (@typeInfo(T)) {
+            .@"struct" => self.registerStruct(T),
+            .bool,
+            .int,
+            .float,
+            .pointer,
+            .array,
+            .optional,
+            .@"enum",
+            .@"union",
+            .@"fn",
+            => @compileError("unimplemented"),
+            else => @compileError("cannot register comptime-only type"),
+        };
 
         // Try load custom formatter
         if (type_info.hasMethod(T, "customFormat")) {
             self.setFormatter(T, &@field(T, "customFormat"));
         }
 
-        // Recursively register struct's fields that are also structs
-        // NOTE: if this runs, then the `entry.value_ptr` will be invalidated.
-        var child_type_registered = false;
-        inline for (@typeInfo(T).@"struct".fields) |field| {
-            if (@typeInfo(field.type) == .@"struct" and !self.isTypeRegistered(field.type)) {
-                _ = try self.registerType(field.type);
-                child_type_registered = true;
-            }
-        }
+        return self.registered_types.getPtr(type_id).?; // Re-obtain pointer in case any other types were recursively registered.
 
-        if (child_type_registered) {
-            return self.registered_types.getPtr(type_id).?;
-        } else {
-            return entry.value_ptr; // pointer still valid
-        }
     }
 
     pub fn getTypeInfo(self: *const Self, type_name: []const u8) ?*Type {
@@ -91,6 +90,13 @@ pub const TypeRegistry = struct {
 
     fn registerStruct(self: *Self, comptime T: type) !Type {
         const @"struct" = try Struct.init(T, self.allocator);
+
+        // Recursively register struct's fields that are also structs
+        inline for (@typeInfo(T).@"struct".fields) |field| {
+            if (@typeInfo(field.type) == .@"struct" and !self.isTypeRegistered(field.type)) {
+                _ = try self.registerType(field.type);
+            }
+        }
         return Type{ .@"struct" = @"struct" };
     }
 

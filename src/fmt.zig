@@ -42,8 +42,8 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             // const number = util.numberFromBytes(T, slice);
             // writer.print("{d}", .{number}) catch return error.FormatError;
         },
-        .pointer => |*p| {
-            _ = p;
+        .pointer => |*t| {
+            _ = t;
             // const pointee_name = if (std.mem.startsWith(u8, type_name[1..], "const ")) type_name[7..] else type_name[1..];
             // const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
             // const len = type_info.runtimeSizeOf(pointee_name).?;
@@ -51,22 +51,37 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             // writer.writeAll("*") catch return error.FormatError;
             // try formatSlice(registry, pointee_name, inner_slice, writer);
         },
-        .array => {
-            // const optional_size = type_info.runtimeSizeOf(type_name).?;
-            // const option_offset: usize = optional_size / 2;
-            // const is_some = slice[option_offset] != 0;
-            // if (is_some) {
-            //     try formatSlice(registry, type_name[1..], slice[0..option_offset], writer);
-            // } else {
-            //     writer.writeAll("null") catch return error.FormatError;
+        .array => |*t| {
+            _ = t;
+            // const pointee_name = if (std.mem.startsWith(u8, type_name[2..], "const ")) type_name[8..] else type_name[2..];
+            // const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
+            // const len = util.numberFromBytes(usize, slice[8..16]);
+            // const size = type_info.runtimeSizeOf(pointee_name).?;
+            // const array_end = len * size;
+            // var i: usize = 0;
+            // writer.writeAll("{") catch return error.FormatError;
+            // while (i < array_end) {
+            //     try formatSlice(registry, pointee_name, util.makeSlice(u8, ptr + i, size), writer);
+            //     if (i < (len - 1) * size) writer.writeAll(", ") catch return error.FormatError;
+            //     i += size;
             // }
+            // writer.writeAll("}") catch return error.FormatError;
         },
         .@"struct" => {
             writer.writeAll("{ ") catch return error.FormatError;
             try tryFormatStruct(registry, &info.@"struct", @ptrCast(slice.ptr), writer);
             writer.writeAll(" }") catch return error.FormatError;
         },
-        .optional => {},
+        .optional => |*t| {
+            const optional_size = t.*.child.size();
+            const option_offset: usize = optional_size / 2;
+            const is_some = slice[option_offset] != 0;
+            if (is_some) {
+                try formatSlice(registry, info, slice[0..option_offset], writer);
+            } else {
+                writer.writeAll("null") catch return error.FormatError;
+            }
+        },
         .@"enum" => {},
         .@"union" => {},
         .@"fn" => {},

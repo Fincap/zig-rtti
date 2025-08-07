@@ -48,6 +48,21 @@ pub const Type = union(enum) {
             else => @tagName(self),
         };
     }
+
+    pub fn size(self: Type) usize {
+        return switch (self) {
+            .bool => @sizeOf(bool),
+            .int => |t| t.bits / 8,
+            .float => |t| t.bits / 8,
+            .pointer => |t| t.sizeInBytes(),
+            .array => |t| t.len * t.child.size(),
+            .@"struct" => |t| t.size,
+            .optional => |t| t.child.size() * 2,
+            .@"enum" => |t| t.tag_type.size(),
+            .@"union" => @panic("unimplemented"),
+            .@"fn" => @panic("unimplemented!"),
+        };
+    }
 };
 
 /// Runtime equivalent of `std.builtin.Type.Int`.
@@ -106,6 +121,7 @@ pub const Pointer = struct {
     pub fn typeName(self: Pointer) []const u8 {
         _ = self;
         return "pointer";
+        // FIXME: name is semi-dynamic. Maybe have a name field like struct?
         // const prefix = switch (self.size) {
         //     .one => "*",
         //     .many => "[*]",
@@ -114,6 +130,13 @@ pub const Pointer = struct {
         // };
         // const is_const = if (self.is_const) "const" else "";
         // return std.fmt.comptimePrint("{s}{s} {s}", .{ prefix, is_const, self.child.typeName() });
+    }
+
+    pub fn sizeInBytes(self: Pointer) usize {
+        return switch (self.size) {
+            .slice => @sizeOf(usize) * 2,
+            else => @sizeOf(usize),
+        };
     }
 };
 

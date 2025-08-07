@@ -83,9 +83,9 @@ pub const TypeRegistry = struct {
         return self.registered_types.contains(typeId(T));
     }
 
-    fn setFormatter(comptime T: type, allocator: Allocator, formatter: CustomFormatter) void {
+    fn setFormatter(self: *Self, comptime T: type, formatter: CustomFormatter) void {
         const type_id = typeId(T);
-        std.debug.assert(Self.registered_types.contains(type_id));
-        try Self.formatters.put(allocator, type_id, formatter);
+        std.debug.assert(self.registered_types.contains(type_id));
+        try self.formatters.put(self.allocator, type_id, formatter);
     }
 };

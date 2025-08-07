@@ -42,9 +42,9 @@ pub fn formatSlice(registry: *const TypeRegistry, type_name: []const u8, slice: 
 
         // Format struct
         if (registry.getTypeInfo(type_name)) |info| {
-            writer.writeAll("{") catch return error.FormatError;
-            try tryFormatStruct(registry, info, @ptrCast(slice.ptr), writer);
-            writer.writeAll("}") catch return error.FormatError;
+            writer.writeAll("{ ") catch return error.FormatError;
+            try tryFormatStruct(registry, &info.@"struct", @ptrCast(slice.ptr), writer);
+            writer.writeAll(" }") catch return error.FormatError;
             return;
         }
     }

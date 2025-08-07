@@ -30,6 +30,13 @@ pub const Type = union(enum) {
     @"enum": Enum,
     @"union": Union,
     @"fn": Fn,
+
+    pub fn deinit(self: *Type, allocator: Allocator) void {
+        switch (self.*) {
+            .@"struct" => |*t| t.deinit(allocator),
+            else => {},
+        }
+    }
 };
 
 /// Runtime equivalent of `std.builtin.Type.Int`.

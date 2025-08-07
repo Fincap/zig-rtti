@@ -3,6 +3,7 @@ const Allocator = std.mem.Allocator;
 
 const CustomFormatter = @import("fmt.zig").CustomFormatter;
 const type_info = @import("type_info.zig");
+const Type = type_info.Type;
 const Struct = type_info.Struct;
 const TypeId = type_info.TypeId;
 const typeId = type_info.typeId;
@@ -12,7 +13,7 @@ pub const TypeRegistry = struct {
     const Self = @This();
 
     allocator: Allocator,
-    registered_types: std.AutoHashMapUnmanaged(TypeId, Struct) = .empty, // TODO: store `Type` rather than `Struct`
+    registered_types: std.AutoHashMapUnmanaged(TypeId, Type) = .empty,
     type_names: std.StringArrayHashMapUnmanaged(TypeId) = .empty,
     formatters: std.AutoHashMapUnmanaged(TypeId, CustomFormatter) = .empty,
 
@@ -30,32 +31,37 @@ pub const TypeRegistry = struct {
         self.formatters.deinit(self.allocator);
     }
 
-    /// Results in heap allocations. Pointers in returned struct are owned by the registry, and are
-    /// expected to live for the remainder of the program's lifetime.
-    pub fn registerType(self: *Self, comptime T: type) !*Struct {
+    /// Registers the given type, and recursively registers the types of any child types (i.e.
+    /// struct fields, pointer targets, ..)
+    ///
+    /// Pointers to returned struct is owned by the registry, and is expected to live for the
+    /// remainder of the registry's lifetime.
+    pub fn registerType(self: *Self, comptime T: type) !*Type {
         const type_id = typeId(T);
         const entry = try self.registered_types.getOrPut(self.allocator, type_id);
         if (entry.found_existing) {
             return entry.value_ptr;
         }
-        entry.value_ptr.* = try Struct.init(T, self.allocator);
 
-        // Map type name -> type ID
+        // Map type name -> type ID (*feels* like this needs to be done before the type's child types
+        // are registered, but I need to check myself on that assumption)
         const type_name = @typeName(T);
         const name_entry = try self.type_names.getOrPut(self.allocator, type_name);
         name_entry.value_ptr.* = type_id;
 
+        entry.value_ptr.* = try self.registerStruct(T); // TODO: replace with switch
+
         // Try load custom formatter
         if (type_info.hasMethod(T, "customFormat")) {
-            setFormatter(T, &@field(T, "customFormat"));
+            self.setFormatter(T, &@field(T, "customFormat"));
         }
 
         // Recursively register struct's fields that are also structs
         // NOTE: if this runs, then the `entry.value_ptr` will be invalidated.
         var child_type_registered = false;
         inline for (@typeInfo(T).@"struct".fields) |field| {
-            if (@typeInfo(field.type) == .@"struct" and !isTypeRegistered(field.type)) {
-                _ = registerType(field.type);
+            if (@typeInfo(field.type) == .@"struct" and !self.isTypeRegistered(field.type)) {
+                _ = try self.registerType(field.type);
                 child_type_registered = true;
             }
         }
@@ -67,7 +73,7 @@ pub const TypeRegistry = struct {
         }
     }
 
-    pub fn getTypeInfo(self: *const Self, type_name: []const u8) ?*Struct {
+    pub fn getTypeInfo(self: *const Self, type_name: []const u8) ?*Type {
         const maybe_type_id = self.getTypeId(type_name);
         if (maybe_type_id) |type_id| {
             return self.registered_types.getPtr(type_id);
@@ -83,9 +89,14 @@ pub const TypeRegistry = struct {
         return self.registered_types.contains(typeId(T));
     }
 
+    fn registerStruct(self: *Self, comptime T: type) !Type {
+        const @"struct" = try Struct.init(T, self.allocator);
+        return Type{ .@"struct" = @"struct" };
+    }
+
     fn setFormatter(self: *Self, comptime T: type, formatter: CustomFormatter) void {
         const type_id = typeId(T);
-        std.debug.assert(self.registered_types.contains(type_id));
+        std.debug.assert(self.registered_structs.contains(type_id));
         try self.formatters.put(self.allocator, type_id, formatter);
     }
 };

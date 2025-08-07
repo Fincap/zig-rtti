@@ -1,4 +1,5 @@
 const std = @import("std");
+const my_float: f16 = std.math.pi;
 
 const zrtti = @import("root.zig");
 const fmt = zrtti.fmt;
@@ -6,9 +7,14 @@ const type_info = zrtti.type_info;
 const TypeRegistry = zrtti.TypeRegistry;
 const util = zrtti.util;
 
+const OtherStruct = struct {
+    pointer: *const f16 = &my_float,
+};
+
 const TestStruct = struct {
     text: []const u8 = "my string",
     num: u32 = 32,
+    other: OtherStruct = .{},
 };
 
 pub fn main() !void {
@@ -19,6 +25,6 @@ pub fn main() !void {
     defer registry.deinit();
     const my_struct = TestStruct{};
     const info = try registry.registerType(TestStruct);
-    try fmt.tryFormatStruct(&registry, info, &my_struct, std.io.getStdOut().writer().any());
-    std.debug.print("{}", .{info.*});
+    try fmt.tryFormatStruct(&registry, &info.@"struct", &my_struct, std.io.getStdOut().writer().any());
+    std.debug.print("\n{}", .{info.*});
 }

@@ -51,7 +51,7 @@ pub const Pointer = struct {
     size: Size,
     is_const: bool,
     alignment: u16,
-    child: Type, // maybe a string instead?
+    child: *Type, // maybe a string instead?
 
     pub const Size = enum(u2) {
         one,
@@ -65,7 +65,7 @@ pub const Pointer = struct {
 pub const Array = struct {
     // TODO
     len: usize,
-    child: type, // maybe a string instead?
+    child: *Type, // maybe a string instead?
 };
 
 /// Runtime equivalent of `std.builtin.Type.Struct`.
@@ -210,13 +210,13 @@ pub const Declaration = struct {
 /// Runtime equivalent of `std.builtin.Type.Optional`.
 pub const Optional = struct {
     // TODO
-    child: Type, // maybe a string instead?
+    child: *Type, // maybe a string instead?
 };
 
 /// Runtime equivalent of `std.builtin.Type.Enum`.
 pub const Enum = struct {
     // TODO
-    tag_type: Type, // maybe a string instead?
+    tag_type: *Type, // maybe a string instead?
     fields: []const EnumField,
     decls: []const Declaration,
 };

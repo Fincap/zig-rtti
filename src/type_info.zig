@@ -41,10 +41,10 @@ pub const Type = union(enum) {
 
     pub fn typeName(self: Type) []const u8 {
         return switch (self) {
-            .@"struct" => |t| t.name,
             .int => |t| t.typeName(),
             .float => |t| t.typeName(),
-            .pointer => |t| t.typeName(),
+            .pointer => |t| t.name,
+            .@"struct" => |t| t.name,
             else => @tagName(self),
         };
     }
@@ -106,6 +106,7 @@ pub const Float = struct {
 ///
 /// e.g. []const u8 -> {size: .slice, is_const: true, alignment: 1, child: u8}
 pub const Pointer = struct {
+    name: []const u8,
     size: Size,
     is_const: bool,
     alignment: u16,
@@ -117,20 +118,6 @@ pub const Pointer = struct {
         slice,
         c,
     };
-
-    pub fn typeName(self: Pointer) []const u8 {
-        _ = self;
-        return "pointer";
-        // FIXME: name is semi-dynamic. Maybe have a name field like struct?
-        // const prefix = switch (self.size) {
-        //     .one => "*",
-        //     .many => "[*]",
-        //     .slice => "[]",
-        //     .c => "[*c]",
-        // };
-        // const is_const = if (self.is_const) "const" else "";
-        // return std.fmt.comptimePrint("{s}{s} {s}", .{ prefix, is_const, self.child.typeName() });
-    }
 
     pub fn sizeInBytes(self: Pointer) usize {
         return switch (self.size) {

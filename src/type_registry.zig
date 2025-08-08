@@ -127,6 +127,7 @@ pub const TypeRegistry = struct {
             .c => type_info.Pointer.Size.c,
         };
         return Type{ .pointer = .{
+            .name = @typeName(T),
             .size = size,
             .is_const = info.is_const,
             .alignment = info.alignment,

@@ -166,7 +166,8 @@ pub const TypeRegistry = struct {
     fn registerEnum(self: *Self, comptime T: type) !Type {
         const info = @typeInfo(T).@"enum";
         const tag_type = try self.registerType(info.tag_type);
-        const fields = try self.allocator.alloc(EnumField, info.fields.len); // TODO: errdefer
+        const fields = try self.allocator.alloc(EnumField, info.fields.len);
+        errdefer self.allocator.free(fields);
         inline for (info.fields, 0..) |field, i| {
             fields[i] = EnumField{
                 .name = field.name,
@@ -174,6 +175,7 @@ pub const TypeRegistry = struct {
             };
         }
         const decls = try self.allocator.alloc(Declaration, info.decls.len);
+        errdefer self.allocator.free(decls);
         inline for (info.decls, 0..) |decl, i| {
             decls[i] = Declaration{ .name = decl.name };
         }

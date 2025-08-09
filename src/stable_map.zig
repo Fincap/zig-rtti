@@ -42,6 +42,26 @@ pub fn StableMap(comptime K: type, comptime V: type, comptime config: Config) ty
             found_existing: bool,
         };
 
+        pub const Entry = struct {
+            key_ptr: *K,
+            value_ptr: *V,
+        };
+
+        pub const Iterator = struct {
+            map: *const Self,
+            inner: std.AutoHashMapUnmanaged(K, ValueIndex).Iterator,
+
+            pub fn next(it: *Iterator) ?Entry {
+                if (it.inner.next()) |entry| {
+                    return Entry{
+                        .key_ptr = entry.key_ptr,
+                        .value_ptr = it.map.getEntryFromIndex(entry.value_ptr.*),
+                    };
+                }
+                return null;
+            }
+        };
+
         pub fn deinit(self: *Self, allocator: Allocator) void {
             for (self.chunks.items) |chunk| {
                 allocator.free(chunk.buffer);
@@ -98,6 +118,14 @@ pub fn StableMap(comptime K: type, comptime V: type, comptime config: Config) ty
 
         pub fn contains(self: Self, key: K) bool {
             return self.keys.contains(key);
+        }
+
+        pub fn count(self: Self) usize {
+            return self.keys.count();
+        }
+
+        pub fn iterator(self: *const Self) Iterator {
+            return .{ .map = self, .inner = self.keys.iterator() };
         }
 
         /// Returns the index of the chunk where the next entry will be inserted into. The index is

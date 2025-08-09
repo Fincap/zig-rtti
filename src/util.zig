@@ -1,8 +1,6 @@
 const std = @import("std");
 
 const type_info = @import("type_info.zig");
-const Struct = type_info.Struct;
-const StructField = type_info.StructField;
 
 pub const integer_types = .{
     isize,
@@ -79,4 +77,10 @@ pub fn isSlice(type_name: []const u8) bool {
 
 pub fn isOptional(type_name: []const u8) bool {
     return std.mem.startsWith(u8, type_name, "?");
+}
+
+pub inline fn hasMethod(comptime T: type, comptime method: []const u8) bool {
+    const t = @typeInfo(T);
+    if (t != .@"struct" and t != .@"enum" and t != .@"union" and t != .@"opaque") return false;
+    return @hasDecl(T, method) and @typeInfo(@TypeOf(@field(T, method))) == .@"fn";
 }

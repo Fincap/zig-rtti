@@ -7,6 +7,7 @@ const type_info = @import("type_info.zig");
 const Type = type_info.Type;
 const TypeId = type_info.TypeId;
 const typeId = type_info.typeId;
+const util = @import("util.zig");
 
 /// Registry of runtime information for types.
 pub const TypeRegistry = struct {
@@ -66,7 +67,7 @@ pub const TypeRegistry = struct {
         };
 
         // Try load custom formatter
-        if (type_info.hasMethod(T, "customFormat")) {
+        if (util.hasMethod(T, "customFormat")) {
             self.setFormatter(T, &@field(T, "customFormat"));
         }
 

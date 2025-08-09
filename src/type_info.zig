@@ -294,11 +294,3 @@ pub const Type = union(enum) {
         params: []const *Type,
     };
 };
-
-// struct, enum, union, or opaque
-// TODO: move into util
-pub inline fn hasMethod(comptime T: type, comptime method: []const u8) bool {
-    const t = @typeInfo(T);
-    if (t != .@"struct" and t != .@"enum" and t != .@"union" and t != .@"opaque") return false;
-    return @hasDecl(T, method) and @typeInfo(@TypeOf(@field(T, method))) == .@"fn";
-}

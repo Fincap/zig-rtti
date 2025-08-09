@@ -38,9 +38,29 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             const value = slice[0] != 0;
             writer.print("{}", .{value}) catch return error.FormatError;
         },
-        .int, .float => {
-            // const number = util.numberFromBytes(T, slice);
-            // writer.print("{d}", .{number}) catch return error.FormatError;
+        .int => |*t| {
+            const int_types = @typeInfo(@TypeOf(util.integer_types)).@"struct".fields;
+            inline for (int_types) |int_type| {
+                const T: type = @field(util.integer_types, int_type.name);
+                const int_info = @typeInfo(T).int;
+                if (t.bits == int_info.bits and t.signedness == int_info.signedness and t.is_pointer_sized == util.isPointerSized(T)) {
+                    const number = util.numberFromBytes(T, slice);
+                    writer.print("{d}", .{number}) catch return error.FormatError;
+                    break;
+                }
+            }
+        },
+        .float => |*t| {
+            const float_types = @typeInfo(@TypeOf(util.float_types)).@"struct".fields;
+            inline for (float_types) |float_type| {
+                const T: type = @field(util.float_types, float_type.name);
+                const float_info = @typeInfo(T).float;
+                if (t.bits == float_info.bits) {
+                    const number = util.numberFromBytes(T, slice);
+                    writer.print("{d}", .{number}) catch return error.FormatError;
+                    break;
+                }
+            }
         },
         .pointer => |*t| {
             _ = t;

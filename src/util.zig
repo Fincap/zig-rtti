@@ -4,7 +4,7 @@ const type_info = @import("type_info.zig");
 const Struct = type_info.Struct;
 const StructField = type_info.StructField;
 
-pub const numeric_types = .{
+pub const integer_types = .{
     isize,
     i8,
     i16,
@@ -17,6 +17,9 @@ pub const numeric_types = .{
     u32,
     u64,
     u128,
+};
+
+pub const float_types = .{
     f16,
     f32,
     f64,
@@ -33,9 +36,16 @@ pub inline fn makeSlice(comptime T: type, ptr: [*]const T, len: usize) []const T
 }
 
 pub fn runtimeSizeOf(type_name: []const u8) ?usize {
-    const int_variants = @typeInfo(@TypeOf(numeric_types)).@"struct".fields;
+    const int_variants = @typeInfo(@TypeOf(integer_types)).@"struct".fields;
     inline for (int_variants) |info| {
-        const T: type = @field(numeric_types, info.name);
+        const T: type = @field(integer_types, info.name);
+        if (std.mem.eql(u8, type_name, @typeName(T))) {
+            return @sizeOf(T);
+        }
+    }
+    const float_variants = @typeInfo(@TypeOf(float_types)).@"struct".fields;
+    inline for (float_variants) |info| {
+        const T: type = @field(float_types, info.name);
         if (std.mem.eql(u8, type_name, @typeName(T))) {
             return @sizeOf(T);
         }
@@ -53,6 +63,10 @@ pub fn runtimeSizeOf(type_name: []const u8) ?usize {
         }
     }
     return null;
+}
+
+pub inline fn isPointerSized(comptime T: type) bool {
+    return T == usize or T == isize;
 }
 
 pub fn isPointer(type_name: []const u8) bool {

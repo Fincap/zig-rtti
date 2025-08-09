@@ -7,16 +7,16 @@ const util = @import("util.zig");
 
 pub const TypeId = usize;
 
-/// Returns a unique identifier for the given type, which can be used at runtimne.
-///
-/// The returned IDs will cluster around similar memory addresses because they are actually just
-/// pointers into the program's .bss section.
+const section_name = ".bss.RTTI_Types";
+const @"RTTI_Types.head": u8 linksection(section_name ++ "0") = 0;
+
+/// Returns a unique identifier for the given type, which can be used at runtime.
 pub fn typeId(comptime T: type) TypeId {
     const H = struct {
-        var byte: u8 = 0;
-        var _ = T;
+        const byte: u8 linksection(section_name ++ "1") = 0;
+        const _ = T;
     };
-    return @intFromPtr(&H.byte);
+    return &H.byte - &@"RTTI_Types.head";
 }
 
 /// Runtime equivalent of `std.builtin.Type`.

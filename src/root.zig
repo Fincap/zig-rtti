@@ -1,7 +1,7 @@
 const std = @import("std");
 
 pub const fmt = @import("fmt.zig");
-const type_info = @import("type_info.zig");
+pub const type_info = @import("type_info.zig");
 pub const Type = type_info.Type;
 pub const TypeId = type_info.TypeId;
 pub const typeId = type_info.typeId;

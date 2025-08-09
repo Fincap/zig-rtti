@@ -3,6 +3,7 @@ const Allocator = std.mem.Allocator;
 
 const RTTIError = @import("root.zig").RTTIError;
 const TypeRegistry = @import("type_registry.zig").TypeRegistry;
+const util = @import("util.zig");
 
 pub const TypeId = usize;
 
@@ -208,11 +209,7 @@ pub const Struct = struct {
     pub fn getFieldSliceIndexed(self: *const Self, struct_ptr: *const anyopaque, field_index: usize) []const u8 {
         const field = self.fields[field_index];
         const field_address = @intFromPtr(struct_ptr) + field.offset;
-        // TODO: use makeSlice
-        var slice: []const u8 = undefined;
-        slice.ptr = @ptrFromInt(field_address);
-        slice.len = field.size;
-        return slice;
+        return util.makeSlice(u8, @ptrFromInt(field_address), field.size);
     }
 
     /// O(n) search.
@@ -226,11 +223,7 @@ pub const Struct = struct {
     }
 
     pub fn getSlice(self: *const Self, struct_ptr: *const anyopaque) []const u8 {
-        // TODO: use makeSlice
-        var slice: []const u8 = undefined;
-        slice.ptr = @ptrCast(@alignCast(struct_ptr));
-        slice.len = self.size;
-        return slice;
+        return util.makeSlice(u8, struct_ptr, self.size);
     }
 
     pub fn format(self: Struct, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {

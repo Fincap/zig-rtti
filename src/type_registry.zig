@@ -63,9 +63,8 @@ pub const TypeRegistry = struct {
             .@"struct" => self.registerStruct(T),
             .optional => self.registerOptional(T),
             .@"enum" => self.registerEnum(T),
-            .@"union",
-            .@"fn",
-            => @compileError("register type for " ++ @typeName(T) ++ " unimplemented"),
+            .@"union" => @compileError("unimplemented"),
+            .@"fn" => @compileError("unimplemented"),
             else => @compileError("cannot register comptime-only type"),
         };
 
@@ -182,6 +181,27 @@ pub const TypeRegistry = struct {
             .tag_type = tag_type,
             .fields = fields,
             .decls = decls,
+        } };
+    }
+
+    fn registerFn(self: *Self, comptime T: type) !Type {
+        const info = @typeInfo(T).@"fn";
+        std.debug.print("{}\n", .{info.is_generic});
+        if (info.is_generic) return error.GenericFnUnsupported; // FIXME: switch on corrupt value panic
+        if (info.is_var_args) return error.VarArgFnUnsupported;
+
+        const return_type = self.registerType(info.return_type);
+        const params = try self.allocator.alloc(*Type, info.params.len);
+        errdefer self.allocator.free(params);
+        inline for (info.params, 0..) |param, i| {
+            if (param.is_generic) return error.GenericFnUnsupported;
+            const param_type = param.type orelse return error.GenericFnUnsupported;
+            params[i] = try self.registerType(param_type);
+        }
+        return Type{ .@"fn" = .{
+            .calling_convention = info.calling_convention,
+            .return_type = return_type,
+            .params = params,
         } };
     }
 

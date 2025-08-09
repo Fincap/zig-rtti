@@ -36,14 +36,14 @@ pub fn main() !void {
     // std.debug.print("tag_type = {}, fields = {{ ", .{enum_info.tag_type});
     // inline for (enum_info.fields, 0..) |field, i| {
     //     std.debug.print("{{ .name = {s}, .value = {d} }}", .{ field.name, field.value });
-    //     if (i < enum_info.fields.len) {
+    //     if (i < enum_info.fields.len - 1) {
     //         std.debug.print(", ", .{});
     //     }
     // }
     // std.debug.print(" }}, decls = {{ ", .{});
     // inline for (enum_info.decls, 0..) |decl, i| {
     //     std.debug.print("\"{s}\"", .{decl.name});
-    //     if (i < enum_info.decls.len) {
+    //     if (i < enum_info.decls.len - 1) {
     //         std.debug.print(", ", .{});
     //     }
     // }

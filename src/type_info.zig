@@ -302,8 +302,12 @@ pub const Union = struct {
 };
 
 /// Runtime equivalent of `std.builtin.Type.Fn`.
+///
+/// Functions using generics or varargs are not supported.
 pub const Fn = struct {
-    // TODO
+    calling_convention: std.builtin.CallingConvention,
+    return_type: ?*Type,
+    params: []const *Type,
 };
 
 // struct, enum, union, or opaque

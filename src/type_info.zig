@@ -19,8 +19,6 @@ pub fn typeId(comptime T: type) TypeId {
 /// Runtime equivalent of `std.builtin.Type`.
 ///
 /// Excludes any comptime types that cannot be meaningfully represent at runtime.
-///
-/// TODO: maybe move the Type classes into this struct's namespace, mirroring std.
 pub const Type = union(enum) {
     bool: void,
     int: Int,
@@ -68,236 +66,237 @@ pub const Type = union(enum) {
             .@"fn" => @panic("unimplemented!"),
         };
     }
-};
 
-/// Runtime equivalent of `std.builtin.Type.Int`.
-pub const Int = struct {
-    signedness: std.builtin.Signedness,
-    bits: u16,
-    is_pointer_sized: bool,
+    /// Runtime equivalent of `std.builtin.Type.Int`.
+    pub const Int = struct {
+        signedness: std.builtin.Signedness,
+        bits: u16,
+        is_pointer_sized: bool,
 
-    pub fn typeName(self: Int) []const u8 {
-        if (self.is_pointer_sized) {
-            return if (self.signedness == .signed) @typeName(isize) else @typeName(usize);
+        pub fn typeName(self: Int) []const u8 {
+            if (self.is_pointer_sized) {
+                return if (self.signedness == .signed) @typeName(isize) else @typeName(usize);
+            }
+            return switch (self.bits) {
+                8 => if (self.signedness == .signed) @typeName(i8) else @typeName(u8),
+                16 => if (self.signedness == .signed) @typeName(i16) else @typeName(u16),
+                32 => if (self.signedness == .signed) @typeName(i32) else @typeName(u32),
+                64 => if (self.signedness == .signed) @typeName(i8) else @typeName(u8),
+                128 => if (self.signedness == .signed) @typeName(i8) else @typeName(u8),
+                else => @panic("arbitrary bit-width integers not supported"),
+            };
         }
-        return switch (self.bits) {
-            8 => if (self.signedness == .signed) @typeName(i8) else @typeName(u8),
-            16 => if (self.signedness == .signed) @typeName(i16) else @typeName(u16),
-            32 => if (self.signedness == .signed) @typeName(i32) else @typeName(u32),
-            64 => if (self.signedness == .signed) @typeName(i8) else @typeName(u8),
-            128 => if (self.signedness == .signed) @typeName(i8) else @typeName(u8),
-            else => @panic("arbitrary bit-width integers not supported"),
-        };
-    }
-};
-
-/// Runtime equivalent of `std.builtin.Type.Float`.
-pub const Float = struct {
-    bits: u16,
-
-    pub fn typeName(self: Float) []const u8 {
-        switch (self.bits) {
-            16 => return @typeName(f16),
-            32 => return @typeName(f32),
-            64 => return @typeName(f64),
-            80 => return @typeName(f80),
-            128 => return @typeName(f128),
-            else => @panic("unsupported float width"),
-        }
-    }
-};
-
-/// Runtime equivalent of `std.builtin.Type.Pointer`.
-///
-/// e.g. []const u8 -> {size: .slice, is_const: true, alignment: 1, child: u8}
-pub const Pointer = struct {
-    name: []const u8,
-    size: Size,
-    is_const: bool,
-    alignment: u16,
-    child: *Type,
-
-    pub const Size = enum(u2) {
-        one,
-        many,
-        slice,
-        c,
     };
 
-    pub fn sizeInBytes(self: Pointer) usize {
-        return switch (self.size) {
-            .slice => @sizeOf(usize) * 2,
-            else => @sizeOf(usize),
-        };
-    }
-};
+    /// Runtime equivalent of `std.builtin.Type.Float`.
+    pub const Float = struct {
+        bits: u16,
 
-/// Runtime equivalent of `std.builtin.Type.Array`.
-///
-/// e.g. [5]u8 -> {len: 5, child: u8}
-pub const Array = struct {
-    name: []const u8,
-    len: usize,
-    child: *Type,
-};
-
-/// Runtime equivalent of `std.builtin.Type.Struct`.
-///
-/// Lacking fields from comptime (I'm open to adding them):
-/// - `layout`: `ContainerLayout`
-/// - `backing_integer`: `?type`
-/// - `is_tuple`: `bool`
-///
-/// Runtime-exclusive fields:
-/// - `size`: `usize`
-/// - `alignment`: `usize`
-///
-/// Allocated fields are be owned by the `TypeRegistry` that created this struct.
-pub const Struct = struct {
-    const Self = @This();
-
-    name: []const u8,
-    fields: []const StructField,
-    decls: []const Declaration,
-    size: usize,
-    alignment: usize,
-
-    pub fn deinit(self: *Self, allocator: Allocator) void {
-        allocator.free(self.fields);
-        allocator.free(self.decls);
-    }
-
-    pub fn getFieldPtr(self: *const Self, struct_ptr: *const anyopaque, field_name: []const u8) ?*anyopaque {
-        if (self.getFieldIndex(field_name)) |i| {
-            const field = self.fields[i];
-            return @ptrFromInt(@intFromPtr(struct_ptr) + field.offset);
-        }
-        return null;
-    }
-
-    pub fn getFieldSlice(self: *const Self, struct_ptr: *const anyopaque, field_name: []const u8) ?[]const u8 {
-        if (self.getFieldIndex(field_name)) |i| {
-            return self.getFieldSliceIndexed(struct_ptr, i);
-        }
-        return null;
-    }
-
-    pub fn getFieldSliceIndexed(self: *const Self, struct_ptr: *const anyopaque, field_index: usize) []const u8 {
-        const field = self.fields[field_index];
-        const field_address = @intFromPtr(struct_ptr) + field.offset;
-        return util.makeSlice(u8, @ptrFromInt(field_address), field.size);
-    }
-
-    /// O(n) search.
-    pub fn getFieldIndex(self: *const Self, field_name: []const u8) ?usize {
-        for (self.fields, 0..) |field, i| {
-            if (std.mem.eql(u8, field_name, field.name)) {
-                return i;
+        pub fn typeName(self: Float) []const u8 {
+            switch (self.bits) {
+                16 => return @typeName(f16),
+                32 => return @typeName(f32),
+                64 => return @typeName(f64),
+                80 => return @typeName(f80),
+                128 => return @typeName(f128),
+                else => @panic("unsupported float width"),
             }
         }
-        return null;
-    }
+    };
 
-    pub fn getSlice(self: *const Self, struct_ptr: *const anyopaque) []const u8 {
-        return util.makeSlice(u8, struct_ptr, self.size);
-    }
+    /// Runtime equivalent of `std.builtin.Type.Pointer`.
+    ///
+    /// e.g. []const u8 -> {size: .slice, is_const: true, alignment: 1, child: u8}
+    pub const Pointer = struct {
+        name: []const u8,
+        size: Size,
+        is_const: bool,
+        alignment: u16,
+        child: *Type,
 
-    pub fn format(self: Struct, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        _ = .{ fmt, options };
-        try writer.print("{}{{ .name = \"{s}\", .size = {d}, .alignment = {d}, .fields = {{ ", .{ Struct, self.name, self.size, self.alignment });
-        for (self.fields, 0..) |field, i| {
-            try writer.print("{}", .{field});
-            if (i < self.fields.len - 1) try writer.writeAll(", ");
+        pub const Size = enum(u2) {
+            one,
+            many,
+            slice,
+            c,
+        };
+
+        pub fn sizeInBytes(self: Pointer) usize {
+            return switch (self.size) {
+                .slice => @sizeOf(usize) * 2,
+                else => @sizeOf(usize),
+            };
         }
-        try writer.writeAll(" }, .decls = { ");
-        for (self.decls, 0..) |decl, i| {
-            try writer.print("{}", .{decl});
-            if (i < self.fields.len - 1) try writer.writeAll(", ");
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.Array`.
+    ///
+    /// e.g. [5]u8 -> {len: 5, child: u8}
+    pub const Array = struct {
+        name: []const u8,
+        len: usize,
+        child: *Type,
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.Struct`.
+    ///
+    /// Lacking fields from comptime (I'm open to adding them):
+    /// - `layout`: `ContainerLayout`
+    /// - `backing_integer`: `?type`
+    /// - `is_tuple`: `bool`
+    ///
+    /// Runtime-exclusive fields:
+    /// - `size`: `usize`
+    /// - `alignment`: `usize`
+    ///
+    /// Allocated fields are be owned by the `TypeRegistry` that created this struct.
+    pub const Struct = struct {
+        const Self = @This();
+
+        name: []const u8,
+        fields: []const StructField,
+        decls: []const Declaration,
+        size: usize,
+        alignment: usize,
+
+        pub fn deinit(self: *Self, allocator: Allocator) void {
+            allocator.free(self.fields);
+            allocator.free(self.decls);
         }
-        try writer.writeAll(" }");
-    }
-};
 
-/// Runtime equivalent of `std.builtin.Type.StructField`.
-pub const StructField = struct {
-    const Self = @This();
-
-    name: []const u8,
-    type: *Type,
-    default_value_ptr: ?*const anyopaque,
-    size: usize,
-    alignment: usize,
-    offset: usize,
-
-    pub fn format(self: StructField, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        _ = .{ fmt, options };
-        try writer.print("{}{{ .name = \"{s}\", .type_name = \"{s}\", .default_value_ptr = {*}, size = {d}, alignment = {d}, offset = {d} }}", .{ StructField, self.name, self.type.typeName(), self.default_value_ptr, self.size, self.alignment, self.offset });
-    }
-};
-
-/// Runtime equivalent of `std.builtin.Type.Declaration`.
-pub const Declaration = struct {
-    const Self = @This();
-
-    name: []const u8,
-
-    pub fn format(self: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        _ = .{ fmt, options };
-        try writer.print("{}{{ .name = \"{s}\" }}", .{ Self, self.name });
-    }
-};
-
-/// Runtime equivalent of `std.builtin.Type.Optional`.
-pub const Optional = struct {
-    child: *Type,
-};
-
-/// Runtime equivalent of `std.builtin.Type.Enum`.
-pub const Enum = struct {
-    name: []const u8,
-    tag_type: *Type,
-    fields: []const EnumField,
-    decls: []const Declaration,
-
-    pub fn getNameFromValue(self: Enum, value: u64) ?[]const u8 {
-        for (self.fields) |field| {
-            if (field.value == value) return field.name;
+        pub fn getFieldPtr(self: *const Self, struct_ptr: *const anyopaque, field_name: []const u8) ?*anyopaque {
+            if (self.getFieldIndex(field_name)) |i| {
+                const field = self.fields[i];
+                return @ptrFromInt(@intFromPtr(struct_ptr) + field.offset);
+            }
+            return null;
         }
-        return null;
-    }
-};
 
-/// Runtime equivalent of `std.builtin.Type.EnumField`.
-pub const EnumField = struct {
-    name: []const u8,
-    value: u64,
-};
+        pub fn getFieldSlice(self: *const Self, struct_ptr: *const anyopaque, field_name: []const u8) ?[]const u8 {
+            if (self.getFieldIndex(field_name)) |i| {
+                return self.getFieldSliceIndexed(struct_ptr, i);
+            }
+            return null;
+        }
 
-/// Runtime equivalent of `std.builtin.Type.Union`.
-pub const Union = struct {
-    name: []const u8,
-    tag_type: *Type,
-    fields: []const UnionField,
-    decls: []const Declaration,
-};
+        pub fn getFieldSliceIndexed(self: *const Self, struct_ptr: *const anyopaque, field_index: usize) []const u8 {
+            const field = self.fields[field_index];
+            const field_address = @intFromPtr(struct_ptr) + field.offset;
+            return util.makeSlice(u8, @ptrFromInt(field_address), field.size);
+        }
 
-/// Runtime equivalent of `std.builtin.Type.UnionField`.
-pub const UnionField = struct {
-    name: []const u8,
-    type: ?*Type,
-    alignment: usize,
-};
+        /// O(n) search.
+        pub fn getFieldIndex(self: *const Self, field_name: []const u8) ?usize {
+            for (self.fields, 0..) |field, i| {
+                if (std.mem.eql(u8, field_name, field.name)) {
+                    return i;
+                }
+            }
+            return null;
+        }
 
-/// Runtime equivalent of `std.builtin.Type.Fn`.
-///
-/// Functions using generics or varargs are not supported.
-pub const Fn = struct {
-    calling_convention: std.builtin.CallingConvention,
-    return_type: ?*Type,
-    params: []const *Type,
+        pub fn getSlice(self: *const Self, struct_ptr: *const anyopaque) []const u8 {
+            return util.makeSlice(u8, struct_ptr, self.size);
+        }
+
+        pub fn format(self: Struct, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+            _ = .{ fmt, options };
+            try writer.print("{}{{ .name = \"{s}\", .size = {d}, .alignment = {d}, .fields = {{ ", .{ Struct, self.name, self.size, self.alignment });
+            for (self.fields, 0..) |field, i| {
+                try writer.print("{}", .{field});
+                if (i < self.fields.len - 1) try writer.writeAll(", ");
+            }
+            try writer.writeAll(" }, .decls = { ");
+            for (self.decls, 0..) |decl, i| {
+                try writer.print("{}", .{decl});
+                if (i < self.fields.len - 1) try writer.writeAll(", ");
+            }
+            try writer.writeAll(" }");
+        }
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.StructField`.
+    pub const StructField = struct {
+        const Self = @This();
+
+        name: []const u8,
+        type: *Type,
+        default_value_ptr: ?*const anyopaque,
+        size: usize,
+        alignment: usize,
+        offset: usize,
+
+        pub fn format(self: StructField, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+            _ = .{ fmt, options };
+            try writer.print("{}{{ .name = \"{s}\", .type_name = \"{s}\", .default_value_ptr = {*}, size = {d}, alignment = {d}, offset = {d} }}", .{ StructField, self.name, self.type.typeName(), self.default_value_ptr, self.size, self.alignment, self.offset });
+        }
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.Declaration`.
+    pub const Declaration = struct {
+        const Self = @This();
+
+        name: []const u8,
+
+        pub fn format(self: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+            _ = .{ fmt, options };
+            try writer.print("{}{{ .name = \"{s}\" }}", .{ Self, self.name });
+        }
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.Optional`.
+    pub const Optional = struct {
+        child: *Type,
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.Enum`.
+    pub const Enum = struct {
+        name: []const u8,
+        tag_type: *Type,
+        fields: []const EnumField,
+        decls: []const Declaration,
+
+        pub fn getNameFromValue(self: Enum, value: u64) ?[]const u8 {
+            for (self.fields) |field| {
+                if (field.value == value) return field.name;
+            }
+            return null;
+        }
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.EnumField`.
+    pub const EnumField = struct {
+        name: []const u8,
+        value: u64,
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.Union`.
+    pub const Union = struct {
+        name: []const u8,
+        tag_type: *Type,
+        fields: []const UnionField,
+        decls: []const Declaration,
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.UnionField`.
+    pub const UnionField = struct {
+        name: []const u8,
+        type: ?*Type,
+        alignment: usize,
+    };
+
+    /// Runtime equivalent of `std.builtin.Type.Fn`.
+    ///
+    /// Functions using generics or varargs are not supported.
+    pub const Fn = struct {
+        calling_convention: std.builtin.CallingConvention,
+        return_type: ?*Type,
+        params: []const *Type,
+    };
 };
 
 // struct, enum, union, or opaque
+// TODO: move into util
 pub inline fn hasMethod(comptime T: type, comptime method: []const u8) bool {
     const t = @typeInfo(T);
     if (t != .@"struct" and t != .@"enum" and t != .@"union" and t != .@"opaque") return false;

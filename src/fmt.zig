@@ -2,15 +2,13 @@ const std = @import("std");
 
 const RTTIError = @import("root.zig").RTTIError;
 const type_info = @import("type_info.zig");
-const Struct = type_info.Struct;
-const StructField = type_info.StructField;
 const Type = type_info.Type;
 const TypeRegistry = @import("type_registry.zig").TypeRegistry;
 const util = @import("util.zig");
 
 pub const CustomFormatter = *const fn (struct_ptr: *const anyopaque, writer: std.io.AnyWriter) RTTIError!void;
 
-pub fn tryFormatStruct(registry: *const TypeRegistry, info: *const Struct, ptr: *const anyopaque, writer: std.io.AnyWriter) RTTIError!void {
+pub fn tryFormatStruct(registry: *const TypeRegistry, info: *const Type.Struct, ptr: *const anyopaque, writer: std.io.AnyWriter) RTTIError!void {
     for (info.fields, 0..) |field_info, i| {
         const field_slice = info.getFieldSliceIndexed(ptr, i);
         const option_prefix = if (field_info.type.* == .optional) "?" else "";
@@ -20,7 +18,7 @@ pub fn tryFormatStruct(registry: *const TypeRegistry, info: *const Struct, ptr: 
     }
 }
 
-pub fn tryFormatField(registry: *const TypeRegistry, info: *const StructField, slice: []const u8, writer: std.io.AnyWriter) RTTIError!void {
+pub fn tryFormatField(registry: *const TypeRegistry, info: *const Type.StructField, slice: []const u8, writer: std.io.AnyWriter) RTTIError!void {
     try formatSlice(registry, info.type, slice, writer);
 }
 

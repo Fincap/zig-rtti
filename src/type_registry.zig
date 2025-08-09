@@ -5,12 +5,7 @@ const CustomFormatter = @import("fmt.zig").CustomFormatter;
 const StableMap = @import("stable_map.zig").StableMap;
 const type_info = @import("type_info.zig");
 const Type = type_info.Type;
-const Struct = type_info.Struct;
-const StructField = type_info.StructField;
 const TypeId = type_info.TypeId;
-const EnumField = type_info.EnumField;
-const UnionField = type_info.UnionField;
-const Declaration = type_info.Declaration;
 const typeId = type_info.typeId;
 
 /// Registry of runtime information for types.
@@ -123,10 +118,10 @@ pub const TypeRegistry = struct {
         const info = @typeInfo(T).pointer;
         const child = try self.registerType(info.child);
         const size = switch (info.size) {
-            .one => type_info.Pointer.Size.one,
-            .many => type_info.Pointer.Size.many,
-            .slice => type_info.Pointer.Size.slice,
-            .c => type_info.Pointer.Size.c,
+            .one => Type.Pointer.Size.one,
+            .many => Type.Pointer.Size.many,
+            .slice => Type.Pointer.Size.slice,
+            .c => Type.Pointer.Size.c,
         };
         return Type{ .pointer = .{
             .name = @typeName(T),
@@ -149,11 +144,11 @@ pub const TypeRegistry = struct {
 
     fn registerStruct(self: *Self, comptime T: type) !Type {
         const info = @typeInfo(T).@"struct";
-        const fields = try self.allocator.alloc(StructField, info.fields.len);
+        const fields = try self.allocator.alloc(Type.StructField, info.fields.len);
         errdefer self.allocator.free(fields);
         inline for (info.fields, 0..) |field, i| {
             const field_type = try self.registerType(field.type);
-            fields[i] = StructField{
+            fields[i] = Type.StructField{
                 .name = field.name,
                 .type = field_type,
                 .default_value_ptr = field.default_value_ptr,
@@ -162,10 +157,10 @@ pub const TypeRegistry = struct {
                 .offset = @offsetOf(T, field.name),
             };
         }
-        const decls = try self.allocator.alloc(Declaration, info.decls.len);
+        const decls = try self.allocator.alloc(Type.Declaration, info.decls.len);
         errdefer self.allocator.free(decls);
         inline for (info.decls, 0..) |decl, i| {
-            decls[i] = Declaration{ .name = decl.name };
+            decls[i] = Type.Declaration{ .name = decl.name };
         }
         return Type{ .@"struct" = .{
             .name = @typeName(T),
@@ -185,18 +180,18 @@ pub const TypeRegistry = struct {
     fn registerEnum(self: *Self, comptime T: type) !Type {
         const info = @typeInfo(T).@"enum";
         const tag_type = try self.registerType(info.tag_type);
-        const fields = try self.allocator.alloc(EnumField, info.fields.len);
+        const fields = try self.allocator.alloc(Type.EnumField, info.fields.len);
         errdefer self.allocator.free(fields);
         inline for (info.fields, 0..) |field, i| {
-            fields[i] = EnumField{
+            fields[i] = Type.EnumField{
                 .name = field.name,
                 .value = field.value,
             };
         }
-        const decls = try self.allocator.alloc(Declaration, info.decls.len);
+        const decls = try self.allocator.alloc(Type.Declaration, info.decls.len);
         errdefer self.allocator.free(decls);
         inline for (info.decls, 0..) |decl, i| {
-            decls[i] = Declaration{ .name = decl.name };
+            decls[i] = Type.Declaration{ .name = decl.name };
         }
         return Type{ .@"enum" = .{
             .name = @typeName(T),
@@ -209,20 +204,20 @@ pub const TypeRegistry = struct {
     fn registerUnion(self: *Self, comptime T: type) !Type {
         const info = @typeInfo(T).@"union";
         const tag_type = if (info.tag_type) |tag| try self.registerType(tag) else null;
-        const fields = try self.allocator.alloc(UnionField, info.fields.len);
+        const fields = try self.allocator.alloc(Type.UnionField, info.fields.len);
         errdefer self.allocator.free(fields);
         inline for (info.fields, 0..) |field, i| {
             const field_type = if (field.type != void) try self.registerType(field.type) else null;
-            fields[i] = UnionField{
+            fields[i] = Type.UnionField{
                 .name = field.name,
                 .type = field_type,
                 .alignment = field.alignment,
             };
         }
-        const decls = try self.allocator.alloc(Declaration, info.decls.len);
+        const decls = try self.allocator.alloc(Type.Declaration, info.decls.len);
         errdefer self.allocator.free(decls);
         inline for (info.decls, 0..) |decl, i| {
-            decls[i] = Declaration{ .name = decl.name };
+            decls[i] = Type.Declaration{ .name = decl.name };
         }
         return Type{ .@"union" = .{
             .name = @typeName(T),

@@ -34,7 +34,9 @@ pub const Type = union(enum) {
     pub fn deinit(self: *Type, allocator: Allocator) void {
         switch (self.*) {
             .@"struct" => |*t| t.deinit(allocator),
-            // TODO: implement remaining types
+            .@"enum" => |*t| t.deinit(allocator),
+            .@"union" => |*t| t.deinit(allocator),
+            .@"fn" => |*t| t.deinit(allocator),
             else => {},
         }
     }
@@ -246,6 +248,7 @@ pub const Type = union(enum) {
 
     /// Runtime equivalent of `std.builtin.Type.Optional`.
     pub const Optional = struct {
+        // TODO: add name
         child: *Type,
     };
 
@@ -255,6 +258,11 @@ pub const Type = union(enum) {
         tag_type: *Type,
         fields: []const EnumField,
         decls: []const Declaration,
+
+        pub fn deinit(self: *Enum, allocator: Allocator) void {
+            allocator.free(self.fields);
+            allocator.free(self.decls);
+        }
 
         pub fn getNameFromValue(self: Enum, value: u64) ?[]const u8 {
             for (self.fields) |field| {
@@ -276,6 +284,11 @@ pub const Type = union(enum) {
         tag_type: *Type,
         fields: []const UnionField,
         decls: []const Declaration,
+
+        pub fn deinit(self: *Union, allocator: Allocator) void {
+            allocator.free(self.fields);
+            allocator.free(self.decls);
+        }
     };
 
     /// Runtime equivalent of `std.builtin.Type.UnionField`.
@@ -292,5 +305,9 @@ pub const Type = union(enum) {
         calling_convention: std.builtin.CallingConvention,
         return_type: ?*Type,
         params: []const *Type,
+
+        pub fn deinit(self: *Fn, allocator: Allocator) void {
+            allocator.free(self.params);
+        }
     };
 };

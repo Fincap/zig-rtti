@@ -18,6 +18,7 @@ const TestStruct = struct {
     int: i32 = -132,
     other: OtherStruct = .{},
     maybe: ?bool = null,
+    array: [4]i8 = [4]i8{ -10, -1, 1, 10 },
 };
 
 pub fn main() !void {

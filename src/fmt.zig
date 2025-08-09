@@ -99,8 +99,16 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             }
         },
         .array => |*t| {
-            _ = t;
-            @panic("unimplemented");
+            const size = t.child.size();
+            const array_end = t.len * size;
+            var i: usize = 0;
+            writer.writeAll("{") catch return error.FormatError;
+            while (i < array_end) {
+                try formatSlice(registry, t.child, util.makeSlice(u8, slice.ptr + i, size), writer);
+                if (i < (t.len - 1) * size) writer.writeAll(", ") catch return error.FormatError;
+                i += size;
+            }
+            writer.writeAll("}") catch return error.FormatError;
         },
         .@"struct" => {
             writer.writeAll("{ ") catch return error.FormatError;

@@ -57,9 +57,9 @@ pub const TypeRegistry = struct {
             .int => self.registerInt(T),
             .pointer => self.registerPointer(T),
             .float => self.registerFloat(T),
+            .array => self.registerArray(T),
             .@"struct" => self.registerStruct(T),
             .optional => self.registerOptional(T),
-            .array,
             .@"enum",
             .@"union",
             .@"fn",
@@ -130,6 +130,16 @@ pub const TypeRegistry = struct {
             .size = size,
             .is_const = info.is_const,
             .alignment = info.alignment,
+            .child = child,
+        } };
+    }
+
+    fn registerArray(self: *Self, comptime T: type) !Type {
+        const info = @typeInfo(T).array;
+        const child = try self.registerType(info.child);
+        return Type{ .array = .{
+            .name = @typeName(T),
+            .len = info.len,
             .child = child,
         } };
     }

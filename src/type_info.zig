@@ -132,7 +132,7 @@ pub const Pointer = struct {
 ///
 /// e.g. [5]u8 -> {len: 5, child: u8}
 pub const Array = struct {
-    // TODO
+    name: []const u8,
     len: usize,
     child: *Type,
 };

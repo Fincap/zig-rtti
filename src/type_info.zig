@@ -36,6 +36,7 @@ pub const Type = union(enum) {
     pub fn deinit(self: *Type, allocator: Allocator) void {
         switch (self.*) {
             .@"struct" => |*t| t.deinit(allocator),
+            // TODO: implement remaining types
             else => {},
         }
     }
@@ -160,34 +161,6 @@ pub const Struct = struct {
     decls: []const Declaration,
     size: usize,
     alignment: usize,
-
-    // TODO: inline this into `TypeRegistry.registerStruct`
-    pub fn init(comptime T: type, registry: *TypeRegistry) !Self {
-        const struct_info = @typeInfo(T).@"struct";
-        const fields = try registry.allocator.alloc(StructField, struct_info.fields.len);
-        inline for (struct_info.fields, 0..) |field, i| {
-            const field_type = try registry.registerType(field.type);
-            fields[i] = StructField{
-                .name = field.name,
-                .type = field_type,
-                .default_value_ptr = field.default_value_ptr,
-                .size = @sizeOf(field.type),
-                .alignment = field.alignment,
-                .offset = @offsetOf(T, field.name),
-            };
-        }
-        const decls = try registry.allocator.alloc(Declaration, struct_info.decls.len);
-        inline for (struct_info.decls, 0..) |decl, i| {
-            decls[i] = Declaration{ .name = decl.name };
-        }
-        return Self{
-            .name = @typeName(T),
-            .fields = fields,
-            .decls = decls,
-            .size = @sizeOf(T),
-            .alignment = @alignOf(T),
-        };
-    }
 
     pub fn deinit(self: *Self, allocator: Allocator) void {
         allocator.free(self.fields);

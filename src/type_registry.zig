@@ -6,6 +6,7 @@ const StableMap = @import("stable_map.zig").StableMap;
 const type_info = @import("type_info.zig");
 const Type = type_info.Type;
 const Struct = type_info.Struct;
+const StructField = type_info.StructField;
 const TypeId = type_info.TypeId;
 const EnumField = type_info.EnumField;
 const UnionField = type_info.UnionField;
@@ -147,14 +148,32 @@ pub const TypeRegistry = struct {
     }
 
     fn registerStruct(self: *Self, comptime T: type) !Type {
-        // Recursively register struct's fields that are also structs
-        inline for (@typeInfo(T).@"struct".fields) |field| {
-            if (@typeInfo(field.type) == .@"struct" and !self.isTypeRegistered(field.type)) {
-                _ = try self.registerType(field.type);
-            }
+        const info = @typeInfo(T).@"struct";
+        const fields = try self.allocator.alloc(StructField, info.fields.len);
+        errdefer self.allocator.free(fields);
+        inline for (info.fields, 0..) |field, i| {
+            const field_type = try self.registerType(field.type);
+            fields[i] = StructField{
+                .name = field.name,
+                .type = field_type,
+                .default_value_ptr = field.default_value_ptr,
+                .size = @sizeOf(field.type),
+                .alignment = field.alignment,
+                .offset = @offsetOf(T, field.name),
+            };
         }
-
-        return Type{ .@"struct" = try Struct.init(T, self) };
+        const decls = try self.allocator.alloc(Declaration, info.decls.len);
+        errdefer self.allocator.free(decls);
+        inline for (info.decls, 0..) |decl, i| {
+            decls[i] = Declaration{ .name = decl.name };
+        }
+        return Type{ .@"struct" = .{
+            .name = @typeName(T),
+            .fields = fields,
+            .decls = decls,
+            .size = @sizeOf(T),
+            .alignment = @alignOf(T),
+        } };
     }
 
     fn registerOptional(self: *Self, comptime T: type) !Type {

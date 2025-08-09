@@ -1,10 +1,9 @@
 const std = @import("std");
-
-const RTTIError = @import("root.zig").RTTIError;
-const type_info = @import("type_info.zig");
-const Type = type_info.Type;
-const TypeRegistry = @import("type_registry.zig").TypeRegistry;
-const util = @import("util.zig");
+const rtti = @import("root");
+const RTTIError = rtti.RTTIError;
+const Type = rtti.type_info.Type;
+const TypeRegistry = rtti.TypeRegistry;
+const util = rtti.util;
 
 pub const CustomFormatter = *const fn (struct_ptr: *const anyopaque, writer: std.io.AnyWriter) RTTIError!void;
 

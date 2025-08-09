@@ -1,14 +1,11 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-
-const RTTIError = @import("root.zig").RTTIError;
-const TypeRegistry = @import("type_registry.zig").TypeRegistry;
-const util = @import("util.zig");
+const rtti = @import("root");
+const RTTIError = rtti.RTTIError;
+const TypeRegistry = rtti.TypeRegistry;
+const util = rtti.util;
 
 pub const TypeId = usize;
-
-const section_name = ".bss.RTTI_Types";
-const @"RTTI_Types.head": u8 linksection(section_name ++ "0") = 0;
 
 /// Returns a unique identifier for the given type, which can be used at runtime.
 pub fn typeId(comptime T: type) TypeId {
@@ -18,6 +15,8 @@ pub fn typeId(comptime T: type) TypeId {
     };
     return &H.byte - &@"RTTI_Types.head";
 }
+const section_name = ".bss.RTTI_Types";
+const @"RTTI_Types.head": u8 linksection(section_name ++ "0") = 0;
 
 /// Runtime equivalent of `std.builtin.Type`.
 ///

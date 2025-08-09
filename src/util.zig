@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const type_info = @import("type_info.zig");
-
 pub const integer_types = .{
     isize,
     i8,

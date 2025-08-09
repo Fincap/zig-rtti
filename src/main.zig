@@ -1,11 +1,11 @@
 const std = @import("std");
 const my_float: f16 = std.math.pi;
 
-const zrtti = @import("root.zig");
-const fmt = zrtti.fmt;
-const type_info = zrtti.type_info;
-const TypeRegistry = zrtti.TypeRegistry;
-const util = zrtti.util;
+const rtti = @import("root.zig");
+const fmt = rtti.fmt;
+const type_info = rtti.type_info;
+const TypeRegistry = rtti.TypeRegistry;
+const util = rtti.util;
 
 const MyEnum = enum {
     one,

@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const project_name: []const u8 = "zrtti";
+const project_name: []const u8 = "rtti";
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -28,7 +28,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe_mod.addImport("zrtti_lib", lib_mod);
+    exe_mod.addImport("rtti_lib", lib_mod);
 
     const exe = b.addExecutable(.{
         .name = project_name,

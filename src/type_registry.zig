@@ -100,14 +100,10 @@ pub const TypeRegistry = struct {
     fn registerInt(self: *Self, comptime T: type) !Type {
         _ = self;
         const info = @typeInfo(T).int;
-        const signedness = switch (info.signedness) {
-            .signed => type_info.Signedness.signed,
-            .unsigned => type_info.Signedness.unsigned,
-        };
         const is_pointer_sized = (T == usize or T == isize);
         return Type{ .int = .{
             .bits = info.bits,
-            .signedness = signedness,
+            .signedness = info.signedness,
             .is_pointer_sized = is_pointer_sized,
         } };
     }

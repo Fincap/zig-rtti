@@ -68,7 +68,7 @@ pub const Type = union(enum) {
 
 /// Runtime equivalent of `std.builtin.Type.Int`.
 pub const Int = struct {
-    signedness: Signedness,
+    signedness: std.builtin.Signedness,
     bits: u16,
     is_pointer_sized: bool,
 
@@ -298,12 +298,6 @@ pub const Union = struct {
 /// Runtime equivalent of `std.builtin.Type.Fn`.
 pub const Fn = struct {
     // TODO
-};
-
-/// Runtime equivalent of `std.builtin.Type.Signedness`.
-pub const Signedness = enum {
-    signed,
-    unsigned,
 };
 
 // struct, enum, union, or opaque

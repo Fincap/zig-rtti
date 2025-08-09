@@ -7,7 +7,10 @@ const util = @import("util.zig");
 
 pub const TypeId = usize;
 
-/// TODO: docs
+/// Returns a unique identifier for the given type, which can be used at runtimne.
+///
+/// The returned IDs will cluster around similar memory addresses because they are actually just
+/// pointers into the program's .bss section.
 pub fn typeId(comptime T: type) TypeId {
     const H = struct {
         var byte: u8 = 0;

@@ -46,8 +46,7 @@ pub const TypeRegistry = struct {
             return entry.value_ptr;
         }
 
-        // Map type name -> type ID (*feels* like this needs to be done before the type's child types
-        // are registered, but I need to check myself on that assumption)
+        // Map type name -> type ID
         const type_name = @typeName(T);
         try self.type_names.put(self.allocator, type_name, type_id);
         errdefer _ = self.type_names.remove(type_name);

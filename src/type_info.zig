@@ -248,7 +248,7 @@ pub const Type = union(enum) {
 
     /// Runtime equivalent of `std.builtin.Type.Optional`.
     pub const Optional = struct {
-        // TODO: add name
+        name: []const u8,
         child: *Type,
     };
 

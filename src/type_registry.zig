@@ -175,7 +175,10 @@ pub const TypeRegistry = struct {
     fn registerOptional(self: *Self, comptime T: type) !Type {
         const info = @typeInfo(T).optional;
         const child = try self.registerType(info.child);
-        return Type{ .optional = .{ .child = child } };
+        return Type{ .optional = .{
+            .name = @typeName(T),
+            .child = child,
+        } };
     }
 
     fn registerEnum(self: *Self, comptime T: type) !Type {

@@ -36,6 +36,8 @@ pub const TypeRegistry = struct {
     ///
     /// Pointers to returned struct is owned by the registry, and is expected to live for the
     /// remainder of the registry's lifetime.
+    ///
+    /// FIXME: returned pointers are *not* stable.
     pub fn registerType(self: *Self, comptime T: type) !*Type {
         const type_id = typeId(T);
         const entry = try self.registered_types.getOrPut(self.allocator, type_id);

@@ -1,12 +1,12 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const rtti = @import("root");
+
+const rtti = @import("root.zig");
 const CustomFormatter = rtti.fmt.CustomFormatter;
 const Type = rtti.Type;
 const TypeId = rtti.TypeId;
 const typeId = rtti.typeId;
 const util = rtti.util;
-
 const StableMap = @import("stable_map.zig").StableMap;
 
 /// Registry of runtime information for types.

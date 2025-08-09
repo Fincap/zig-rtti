@@ -1,6 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const rtti = @import("root");
+
+const rtti = @import("root.zig");
 const RTTIError = rtti.RTTIError;
 const TypeRegistry = rtti.TypeRegistry;
 const util = rtti.util;

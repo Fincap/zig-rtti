@@ -63,29 +63,44 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             }
         },
         .pointer => |*t| {
-            _ = t;
-            // const pointee_name = if (std.mem.startsWith(u8, type_name[1..], "const ")) type_name[7..] else type_name[1..];
-            // const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
-            // const len = type_info.runtimeSizeOf(pointee_name).?;
-            // const inner_slice = util.makeSlice(u8, ptr, len);
-            // writer.writeAll("*") catch return error.FormatError;
-            // try formatSlice(registry, pointee_name, inner_slice, writer);
+            switch (t.size) {
+                .one, .c => {
+                    const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
+                    const len = t.child.size();
+                    const inner_slice = util.makeSlice(u8, ptr, len);
+                    writer.writeAll("*") catch return error.FormatError;
+                    try formatSlice(registry, t.child, inner_slice, writer);
+                },
+                .slice => {
+                    const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
+                    const len = util.numberFromBytes(usize, slice[8..16]);
+
+                    if (std.mem.eql(u8, t.child.typeName(), "u8")) {
+                        // Format string
+                        const string = util.makeSlice(u8, ptr, len);
+                        writer.print("\"{s}\"", .{string}) catch return error.FormatError;
+                    } else {
+                        // Format array
+                        const size = t.child.size();
+                        const array_end = len * size;
+                        var i: usize = 0;
+                        writer.writeAll("{") catch return error.FormatError;
+                        while (i < array_end) {
+                            try formatSlice(registry, t.child, util.makeSlice(u8, ptr + i, size), writer);
+                            if (i < (len - 1) * size) writer.writeAll(", ") catch return error.FormatError;
+                            i += size;
+                        }
+                        writer.writeAll("}") catch return error.FormatError;
+                    }
+                },
+                .many => {
+                    @panic("unimplemented");
+                },
+            }
         },
         .array => |*t| {
             _ = t;
-            // const pointee_name = if (std.mem.startsWith(u8, type_name[2..], "const ")) type_name[8..] else type_name[2..];
-            // const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
-            // const len = util.numberFromBytes(usize, slice[8..16]);
-            // const size = type_info.runtimeSizeOf(pointee_name).?;
-            // const array_end = len * size;
-            // var i: usize = 0;
-            // writer.writeAll("{") catch return error.FormatError;
-            // while (i < array_end) {
-            //     try formatSlice(registry, pointee_name, util.makeSlice(u8, ptr + i, size), writer);
-            //     if (i < (len - 1) * size) writer.writeAll(", ") catch return error.FormatError;
-            //     i += size;
-            // }
-            // writer.writeAll("}") catch return error.FormatError;
+            @panic("unimplemented");
         },
         .@"struct" => {
             writer.writeAll("{ ") catch return error.FormatError;

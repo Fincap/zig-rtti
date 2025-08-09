@@ -12,7 +12,8 @@ const OtherStruct = struct {
 };
 
 const TestStruct = struct {
-    // text: []const u8 = "my string",
+    text: []const u8 = "my string",
+    slice: []const u16 = &[_]u16{ 12, 14, 16, 11, 154 },
     num: f16 = my_float,
     int: i32 = -132,
     other: OtherStruct = .{},

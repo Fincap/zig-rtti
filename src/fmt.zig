@@ -132,7 +132,9 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             const variant = t.getNameFromValue(value).?;
             writer.print("{s}.{s}", .{ t.name, variant }) catch return error.FormatError;
         },
-        .@"union" => {},
+        .@"union" => {
+            writer.writeAll("todo") catch return error.FormatError;
+        },
         .@"fn" => {},
     }
 }

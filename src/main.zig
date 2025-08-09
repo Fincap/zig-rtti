@@ -13,6 +13,11 @@ const MyEnum = enum {
     three,
 };
 
+const MyUnion = union(enum) {
+    ok: u32,
+    not_ok,
+};
+
 const OtherStruct = struct {
     pointer: *const f16 = &my_float,
 };
@@ -26,28 +31,30 @@ const TestStruct = struct {
     maybe: ?bool = null,
     array: [4]i8 = [4]i8{ -10, -1, 1, 10 },
     my_enum: MyEnum = .three,
+    my_union: MyUnion = .{ .ok = 55 },
 };
 
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const allocator = arena.allocator();
 
-    // const enum_info = @typeInfo(MyEnum).@"enum";
-    // std.debug.print("tag_type = {}, fields = {{ ", .{enum_info.tag_type});
-    // inline for (enum_info.fields, 0..) |field, i| {
-    //     std.debug.print("{{ .name = {s}, .value = {d} }}", .{ field.name, field.value });
-    //     if (i < enum_info.fields.len - 1) {
-    //         std.debug.print(", ", .{});
-    //     }
-    // }
-    // std.debug.print(" }}, decls = {{ ", .{});
-    // inline for (enum_info.decls, 0..) |decl, i| {
-    //     std.debug.print("\"{s}\"", .{decl.name});
-    //     if (i < enum_info.decls.len - 1) {
-    //         std.debug.print(", ", .{});
-    //     }
-    // }
-    // std.debug.print(" }}\n", .{});
+    const union_info = @typeInfo(MyUnion).@"union";
+    const tag_size = if (union_info.tag_type) |tag| @sizeOf(tag) else 0;
+    std.debug.print("size = {d}, tag_type = {?}, tag_size = {d}, fields = {{ ", .{ @sizeOf(MyUnion), union_info.tag_type, tag_size });
+    inline for (union_info.fields, 0..) |field, i| {
+        std.debug.print("{{ {s}: {} (.alignment = {d}) }}", .{ field.name, field.type, field.alignment });
+        if (i < union_info.fields.len - 1) {
+            std.debug.print(", ", .{});
+        }
+    }
+    std.debug.print(" }}, decls = {{ ", .{});
+    inline for (union_info.decls, 0..) |decl, i| {
+        std.debug.print("\"{s}\"", .{decl.name});
+        if (i < union_info.decls.len - 1) {
+            std.debug.print(", ", .{});
+        }
+    }
+    std.debug.print(" }}\n", .{});
 
     // const my_enum = MyEnum.two;
     // const size = @sizeOf(MyEnum);

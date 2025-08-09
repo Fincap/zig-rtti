@@ -45,7 +45,10 @@ pub const Type = union(enum) {
             .int => |t| t.typeName(),
             .float => |t| t.typeName(),
             .pointer => |t| t.name,
+            .array => |t| t.name,
             .@"struct" => |t| t.name,
+            .@"enum" => |t| t.name,
+            .@"union" => |t| t.name,
             else => @tagName(self),
         };
     }
@@ -291,6 +294,7 @@ pub const Enum = struct {
     }
 };
 
+/// Runtime equivalent of `std.builtin.Type.EnumField`.
 pub const EnumField = struct {
     name: []const u8,
     value: u64,
@@ -298,7 +302,17 @@ pub const EnumField = struct {
 
 /// Runtime equivalent of `std.builtin.Type.Union`.
 pub const Union = struct {
-    // TODO
+    name: []const u8,
+    tag_type: *Type,
+    fields: []const UnionField,
+    decls: []const Declaration,
+};
+
+/// Runtime equivalent of `std.builtin.Type.UnionField`.
+pub const UnionField = struct {
+    name: []const u8,
+    type: ?*Type,
+    alignment: usize,
 };
 
 /// Runtime equivalent of `std.builtin.Type.Fn`.

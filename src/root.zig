@@ -10,3 +10,7 @@ pub const RTTIError = error{
     InvalidField,
     FormatError,
 };
+
+test {
+    std.testing.refAllDecls(@This());
+}

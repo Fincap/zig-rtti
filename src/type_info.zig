@@ -208,6 +208,7 @@ pub const Struct = struct {
     pub fn getFieldSliceIndexed(self: *const Self, struct_ptr: *const anyopaque, field_index: usize) []const u8 {
         const field = self.fields[field_index];
         const field_address = @intFromPtr(struct_ptr) + field.offset;
+        // TODO: use makeSlice
         var slice: []const u8 = undefined;
         slice.ptr = @ptrFromInt(field_address);
         slice.len = field.size;
@@ -225,6 +226,7 @@ pub const Struct = struct {
     }
 
     pub fn getSlice(self: *const Self, struct_ptr: *const anyopaque) []const u8 {
+        // TODO: use makeSlice
         var slice: []const u8 = undefined;
         slice.ptr = @ptrCast(@alignCast(struct_ptr));
         slice.len = self.size;
@@ -278,7 +280,6 @@ pub const Declaration = struct {
 
 /// Runtime equivalent of `std.builtin.Type.Optional`.
 pub const Optional = struct {
-    // TODO
     child: *Type,
 };
 

@@ -73,11 +73,11 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             writer.writeAll(" }") catch return error.FormatError;
         },
         .optional => |*t| {
-            const optional_size = t.*.child.size();
+            const optional_size = t.child.size();
             const option_offset: usize = optional_size / 2;
             const is_some = slice[option_offset] != 0;
             if (is_some) {
-                try formatSlice(registry, info, slice[0..option_offset], writer);
+                try formatSlice(registry, t.child, slice[0..option_offset], writer);
             } else {
                 writer.writeAll("null") catch return error.FormatError;
             }

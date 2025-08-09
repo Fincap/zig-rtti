@@ -58,8 +58,8 @@ pub const TypeRegistry = struct {
             .pointer => self.registerPointer(T),
             .float => self.registerFloat(T),
             .@"struct" => self.registerStruct(T),
+            .optional => self.registerOptional(T),
             .array,
-            .optional,
             .@"enum",
             .@"union",
             .@"fn",
@@ -146,8 +146,13 @@ pub const TypeRegistry = struct {
             }
         }
 
-        const @"struct" = try Struct.init(T, self);
-        return Type{ .@"struct" = @"struct" };
+        return Type{ .@"struct" = try Struct.init(T, self) };
+    }
+
+    fn registerOptional(self: *Self, comptime T: type) !Type {
+        const info = @typeInfo(T).optional;
+        const child = try self.registerType(info.child);
+        return Type{ .optional = .{ .child = child } };
     }
 
     fn setFormatter(self: *Self, comptime T: type, formatter: CustomFormatter) void {

@@ -7,15 +7,18 @@ const Type = type_info.Type;
 const Struct = type_info.Struct;
 const TypeId = type_info.TypeId;
 const typeId = type_info.typeId;
+const StableMap = @import("stable_map.zig").StableMap;
 
 /// Registry of runtime information for types.
 pub const TypeRegistry = struct {
     const Self = @This();
 
     allocator: Allocator,
-    registered_types: std.AutoHashMapUnmanaged(TypeId, Type) = .empty,
+    registered_types: TypeMap = .empty,
     type_names: std.StringHashMapUnmanaged(TypeId) = .empty,
     formatters: std.AutoHashMapUnmanaged(TypeId, CustomFormatter) = .empty,
+
+    const TypeMap = StableMap(TypeId, Type, .{});
 
     pub fn init(allocator: Allocator) Self {
         return Self{ .allocator = allocator };
@@ -36,8 +39,6 @@ pub const TypeRegistry = struct {
     ///
     /// Pointers to returned struct is owned by the registry, and is expected to live for the
     /// remainder of the registry's lifetime.
-    ///
-    /// FIXME: returned pointers are *not* stable.
     pub fn registerType(self: *Self, comptime T: type) !*Type {
         const type_id = typeId(T);
         const entry = try self.registered_types.getOrPut(self.allocator, type_id);

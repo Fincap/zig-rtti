@@ -227,6 +227,7 @@ pub const TypeRegistry = struct {
             .tag_type = tag_type,
             .fields = fields,
             .decls = decls,
+            .size = @sizeOf(T),
         } };
     }
 

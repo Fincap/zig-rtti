@@ -67,7 +67,7 @@ pub const Type = union(enum) {
             .@"struct" => |t| t.size,
             .optional => |t| t.child.size() * 2,
             .@"enum" => |t| t.tag_type.size(),
-            .@"union" => @panic("unimplemented"),
+            .@"union" => |t| t.size,
             .@"fn" => @panic("unimplemented!"),
         };
     }
@@ -284,9 +284,10 @@ pub const Type = union(enum) {
     /// Runtime equivalent of `std.builtin.Type.Union`.
     pub const Union = struct {
         name: []const u8,
-        tag_type: *Type,
+        tag_type: ?*Type,
         fields: []const UnionField,
         decls: []const Declaration,
+        size: usize,
 
         pub fn deinit(self: *Union, allocator: Allocator) void {
             allocator.free(self.fields);

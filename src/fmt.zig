@@ -130,10 +130,21 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             const variant = t.getNameFromValue(value).?;
             writer.print("{s}.{s}", .{ t.name, variant }) catch return error.FormatError;
         },
-        .@"union" => {
-            writer.writeAll("todo") catch return error.FormatError;
+        .@"union" => |*t| {
+            const variant_offset = t.size / 2;
+            var variant: usize = 0;
+            std.mem.copyForwards(u8, std.mem.asBytes(&variant), slice[variant_offset..]);
+            const active_field = t.fields[variant];
+            writer.print("{s}.{s}", .{ t.name, active_field.name }) catch return error.FormatError;
+            if (active_field.type) |field_type| {
+                writer.writeAll("(") catch return error.FormatError;
+                try formatSlice(registry, field_type, slice[0..variant_offset], writer);
+                writer.writeAll(")") catch return error.FormatError;
+            }
         },
-        .@"fn" => {},
+        .@"fn" => {
+            @panic("unimplemented");
+        },
     }
 }
 

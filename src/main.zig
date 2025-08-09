@@ -13,9 +13,9 @@ const MyEnum = enum {
     three,
 };
 
-const MyUnion = union(enum) {
+const MyUnion = union {
     ok: u32,
-    not_ok,
+    not_ok: void,
 };
 
 const OtherStruct = struct {
@@ -37,30 +37,6 @@ const TestStruct = struct {
 pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const allocator = arena.allocator();
-
-    // const union_info = @typeInfo(MyUnion).@"union";
-    // const tag_size = if (union_info.tag_type) |tag| @sizeOf(tag) else 0;
-    // std.debug.print("size = {d}, tag_type = {?}, tag_size = {d}, fields = {{ ", .{ @sizeOf(MyUnion), union_info.tag_type, tag_size });
-    // inline for (union_info.fields, 0..) |field, i| {
-    //     std.debug.print("{{ {s}: {} (.alignment = {d}) }}", .{ field.name, field.type, field.alignment });
-    //     if (i < union_info.fields.len - 1) {
-    //         std.debug.print(", ", .{});
-    //     }
-    // }
-    // std.debug.print(" }}, decls = {{ ", .{});
-    // inline for (union_info.decls, 0..) |decl, i| {
-    //     std.debug.print("\"{s}\"", .{decl.name});
-    //     if (i < union_info.decls.len - 1) {
-    //         std.debug.print(", ", .{});
-    //     }
-    // }
-    // std.debug.print(" }}\n", .{});
-
-    // const my_union = MyUnion{ .ok = 0xFF };
-    // const size = @sizeOf(MyUnion);
-    // const raw_union: [*]const u8 = @ptrCast(&my_union);
-    // const union_bytes: []const u8 = @ptrCast(raw_union[0..size]);
-    // std.debug.print("size = {d}, bytes = {any}\n", .{ size, union_bytes });
 
     var registry = TypeRegistry.init(allocator);
     defer registry.deinit();

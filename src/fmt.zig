@@ -124,7 +124,14 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
                 writer.writeAll("null") catch return error.FormatError;
             }
         },
-        .@"enum" => {},
+        .@"enum" => |*t| {
+            const size = t.tag_type.size();
+            if (size > 8) @panic("enum tags greater than 64 bits unsupported");
+            var value: u64 = 0;
+            std.mem.copyForwards(u8, std.mem.asBytes(&value), slice[0..size]);
+            const variant = t.getNameFromValue(value).?;
+            writer.print("{s}.{s}", .{ t.name, variant }) catch return error.FormatError;
+        },
         .@"union" => {},
         .@"fn" => {},
     }

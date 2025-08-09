@@ -53,8 +53,8 @@ pub const Type = union(enum) {
     pub fn size(self: Type) usize {
         return switch (self) {
             .bool => @sizeOf(bool),
-            .int => |t| t.bits / 8,
-            .float => |t| t.bits / 8,
+            .int => |t| (t.bits + 7) / 8,
+            .float => |t| (t.bits + 7) / 8,
             .pointer => |t| t.sizeInBytes(),
             .array => |t| t.len * t.child.size(),
             .@"struct" => |t| t.size,
@@ -278,16 +278,22 @@ pub const Optional = struct {
 
 /// Runtime equivalent of `std.builtin.Type.Enum`.
 pub const Enum = struct {
-    // TODO
+    name: []const u8,
     tag_type: *Type,
     fields: []const EnumField,
     decls: []const Declaration,
+
+    pub fn getNameFromValue(self: Enum, value: u64) ?[]const u8 {
+        for (self.fields) |field| {
+            if (field.value == value) return field.name;
+        }
+        return null;
+    }
 };
 
 pub const EnumField = struct {
-    // TODO
-    name: [:0]const u8,
-    value: u64, // uncertain
+    name: []const u8,
+    value: u64,
 };
 
 /// Runtime equivalent of `std.builtin.Type.Union`.

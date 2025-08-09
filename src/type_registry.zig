@@ -2,12 +2,14 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const CustomFormatter = @import("fmt.zig").CustomFormatter;
+const StableMap = @import("stable_map.zig").StableMap;
 const type_info = @import("type_info.zig");
 const Type = type_info.Type;
 const Struct = type_info.Struct;
 const TypeId = type_info.TypeId;
+const EnumField = type_info.EnumField;
+const Declaration = type_info.Declaration;
 const typeId = type_info.typeId;
-const StableMap = @import("stable_map.zig").StableMap;
 
 /// Registry of runtime information for types.
 pub const TypeRegistry = struct {
@@ -60,7 +62,7 @@ pub const TypeRegistry = struct {
             .array => self.registerArray(T),
             .@"struct" => self.registerStruct(T),
             .optional => self.registerOptional(T),
-            .@"enum",
+            .@"enum" => self.registerEnum(T),
             .@"union",
             .@"fn",
             => @compileError("register type for " ++ @typeName(T) ++ " unimplemented"),
@@ -159,6 +161,28 @@ pub const TypeRegistry = struct {
         const info = @typeInfo(T).optional;
         const child = try self.registerType(info.child);
         return Type{ .optional = .{ .child = child } };
+    }
+
+    fn registerEnum(self: *Self, comptime T: type) !Type {
+        const info = @typeInfo(T).@"enum";
+        const tag_type = try self.registerType(info.tag_type);
+        const fields = try self.allocator.alloc(EnumField, info.fields.len);
+        inline for (info.fields, 0..) |field, i| {
+            fields[i] = EnumField{
+                .name = field.name,
+                .value = field.value,
+            };
+        }
+        const decls = try self.allocator.alloc(Declaration, info.decls.len);
+        inline for (info.decls, 0..) |decl, i| {
+            decls[i] = Declaration{ .name = decl.name };
+        }
+        return Type{ .@"enum" = .{
+            .name = @typeName(T),
+            .tag_type = tag_type,
+            .fields = fields,
+            .decls = decls,
+        } };
     }
 
     fn setFormatter(self: *Self, comptime T: type, formatter: CustomFormatter) void {

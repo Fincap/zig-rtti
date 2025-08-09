@@ -187,7 +187,7 @@ pub const Type = union(enum) {
         pub fn getFieldSliceIndexed(self: *const Self, struct_ptr: *const anyopaque, field_index: usize) []const u8 {
             const field = self.fields[field_index];
             const field_address = @intFromPtr(struct_ptr) + field.offset;
-            return util.makeSlice(u8, @ptrFromInt(field_address), field.size);
+            return util.makeSlice(u8, @ptrFromInt(field_address), field.type.size());
         }
 
         /// O(n) search.
@@ -227,13 +227,12 @@ pub const Type = union(enum) {
         name: []const u8,
         type: *Type,
         default_value_ptr: ?*const anyopaque,
-        size: usize,
         alignment: usize,
         offset: usize,
 
         pub fn format(self: StructField, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
             _ = .{ fmt, options };
-            try writer.print("{}{{ .name = \"{s}\", .type_name = \"{s}\", .default_value_ptr = {*}, size = {d}, alignment = {d}, offset = {d} }}", .{ StructField, self.name, self.type.typeName(), self.default_value_ptr, self.size, self.alignment, self.offset });
+            try writer.print("{}{{ .name = \"{s}\", .type_name = \"{s}\", .default_value_ptr = {*}, alignment = {d}, offset = {d} }}", .{ StructField, self.name, self.type.typeName(), self.default_value_ptr, self.alignment, self.offset });
         }
     };
 

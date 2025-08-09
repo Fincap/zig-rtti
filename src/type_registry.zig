@@ -152,7 +152,6 @@ pub const TypeRegistry = struct {
                 .name = field.name,
                 .type = field_type,
                 .default_value_ptr = field.default_value_ptr,
-                .size = @sizeOf(field.type),
                 .alignment = field.alignment,
                 .offset = @offsetOf(T, field.name),
             };

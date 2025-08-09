@@ -16,7 +16,7 @@ const TestStruct = struct {
     num: f16 = my_float,
     int: i32 = -132,
     other: OtherStruct = .{},
-    maybe: ?bool = true,
+    maybe: ?bool = null,
 };
 
 pub fn main() !void {

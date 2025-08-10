@@ -1,6 +1,8 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+// TODO: move this into its own library, as it's not directly related to the RTTI library.
+
 pub const Config = struct {
     /// Size of a chunk in bytes (entries may not use up 100% of the allocated chunk due if value
     /// size is not evenly divisible by chunk size).
@@ -15,6 +17,9 @@ pub const Config = struct {
 /// Has increased overhead when accessing values via their keys, as the value needs to be accessed
 /// through a double dereference. Iterating through values will be a potential cache miss on chunk
 /// boundaries.
+///
+/// TODO: create variants for [Auto/String]StableMap[Unmanaged], mirroring std HashMap types.
+/// TODO: add more functions to access methods of underlying dictionary
 pub fn StableMap(comptime K: type, comptime V: type, comptime config: Config) type {
     return struct {
         const Self = @This();

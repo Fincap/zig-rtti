@@ -126,14 +126,14 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             const size = t.tag_type.size();
             if (size > 8) @panic("enum tags greater than 64 bits unsupported");
             var value: u64 = 0;
-            std.mem.copyForwards(u8, std.mem.asBytes(&value), slice[0..size]);
+            std.mem.copyForwards(u8, std.mem.asBytes(&value), slice[0..size]); // TODO: test if works on big-endian
             const variant = t.getNameFromValue(value).?;
             writer.print("{s}.{s}", .{ t.name, variant }) catch return error.FormatError;
         },
         .@"union" => |*t| {
             const variant_offset = t.size / 2;
             var variant: usize = 0;
-            std.mem.copyForwards(u8, std.mem.asBytes(&variant), slice[variant_offset..]);
+            std.mem.copyForwards(u8, std.mem.asBytes(&variant), slice[variant_offset..]); // TODO: test if works on big-endian
             const active_field = t.fields[variant];
             writer.print("{s}.{s}", .{ t.name, active_field.name }) catch return error.FormatError;
             if (active_field.type) |field_type| {

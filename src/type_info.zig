@@ -158,7 +158,7 @@ pub const Type = union(enum) {
     /// Runtime equivalent of `std.builtin.Type.Struct`.
     ///
     /// Lacking fields from comptime (I'm open to adding them):
-    /// - `layout`: `ContainerLayout`
+    /// - `layout`: `ContainerLayout` TODO: implement
     /// - `backing_integer`: `?type`
     /// - `is_tuple`: `bool`
     ///
@@ -293,6 +293,9 @@ pub const Type = union(enum) {
     };
 
     /// Runtime equivalent of `std.builtin.Type.Union`.
+    ///
+    /// TODO: A regular union doesn’t have a guaranteed memory layout (a safety tag is added in
+    /// debug and release safe mode).
     pub const Union = struct {
         name: []const u8,
         tag_type: ?*Type,

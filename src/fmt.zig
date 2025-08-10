@@ -17,30 +17,8 @@ pub fn formatType(
             const value = slice[0] != 0;
             try writer.print("{}", .{value});
         },
-        .int => |*t| {
-            const int_types = @typeInfo(@TypeOf(util.integer_types)).@"struct".fields;
-            inline for (int_types) |int_type| {
-                const T: type = @field(util.integer_types, int_type.name);
-                const int_info = @typeInfo(T).int;
-                if (t.bits == int_info.bits and t.signedness == int_info.signedness and t.is_pointer_sized == util.isPointerSized(T)) {
-                    const number = util.numberFromBytes(T, slice);
-                    try writer.print("{d}", .{number});
-                    break;
-                }
-            }
-        },
-        .float => |*t| {
-            const float_types = @typeInfo(@TypeOf(util.float_types)).@"struct".fields;
-            inline for (float_types) |float_type| {
-                const T: type = @field(util.float_types, float_type.name);
-                const float_info = @typeInfo(T).float;
-                if (t.bits == float_info.bits) {
-                    const number = util.numberFromBytes(T, slice);
-                    try writer.print("{d}", .{number});
-                    break;
-                }
-            }
-        },
+        .int => |*t| try formatInt(t, erased, writer),
+        .float => |*t| try formatFloat(t, erased, writer),
         .pointer => |*t| {
             switch (t.size) {
                 .one, .c => {
@@ -130,6 +108,42 @@ pub fn formatType(
         .@"fn" => {
             @panic("unimplemented");
         },
+    }
+}
+
+pub fn formatInt(
+    info: *const Type.Int,
+    erased: *const anyopaque,
+    writer: std.io.AnyWriter,
+) anyerror!void {
+    const slice = util.makeSlice(u8, @ptrCast(erased), info.size());
+    const int_types = @typeInfo(@TypeOf(util.integer_types)).@"struct".fields;
+    inline for (int_types) |int_type| {
+        const T: type = @field(util.integer_types, int_type.name);
+        const T_info = @typeInfo(T).int;
+        if (info.bits == T_info.bits and info.signedness == T_info.signedness and info.is_pointer_sized == util.isPointerSized(T)) {
+            const number = util.numberFromBytes(T, slice);
+            try writer.print("{d}", .{number});
+            break;
+        }
+    }
+}
+
+pub fn formatFloat(
+    info: *const Type.Float,
+    erased: *const anyopaque,
+    writer: std.io.AnyWriter,
+) anyerror!void {
+    const slice = util.makeSlice(u8, @ptrCast(erased), info.size());
+    const float_types = @typeInfo(@TypeOf(util.float_types)).@"struct".fields;
+    inline for (float_types) |float_type| {
+        const T: type = @field(util.float_types, float_type.name);
+        const T_info = @typeInfo(T).float;
+        if (info.bits == T_info.bits) {
+            const number = util.numberFromBytes(T, slice);
+            try writer.print("{d}", .{number});
+            break;
+        }
     }
 }
 

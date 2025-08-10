@@ -1,7 +1,6 @@
 const std = @import("std");
 
 const rtti = @import("root.zig");
-const RTTIError = rtti.RTTIError;
 const Type = rtti.type_info.Type;
 const TypeRegistry = rtti.TypeRegistry;
 const util = rtti.util;

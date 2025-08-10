@@ -7,11 +7,6 @@ pub const Type = type_info.Type;
 pub const TypeRegistry = @import("type_registry.zig").TypeRegistry;
 pub const util = @import("util.zig");
 
-pub const RTTIError = error{
-    InvalidField,
-    FormatError,
-};
-
 fn printEnumInfo(comptime T: type) void {
     const info = @typeInfo(T).@"union";
     std.debug.print("---- {} ({?}) ----\n", .{ T, info.tag_type });

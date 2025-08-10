@@ -317,7 +317,10 @@ pub const Type = union(enum) {
         pub fn largestVariantSize(self: Union) usize {
             var max: usize = 0;
             for (self.fields) |field| {
-                if (field.type) |field_type| max += field_type.size();
+                if (field.type) |field_type| {
+                    const field_size = field_type.size();
+                    if (field_size > max) max = field_size;
+                }
             }
             return max;
         }

@@ -27,24 +27,7 @@ pub fn formatType(
         },
         .optional => |*t| try formatOptional(t, erased, writer),
         .@"enum" => |*t| try formatEnum(t, erased, writer),
-        .@"union" => |*t| {
-            if (t.hasSafetyTag()) {
-                const tag_offset = t.size / 2;
-                var tag: usize = 0;
-                std.mem.copyForwards(u8, std.mem.asBytes(&tag), slice[tag_offset..]); // TODO: test if works on big-endian
-                const active_variant = t.fields[tag];
-                try writer.print("{s}.{s}", .{ t.name, active_variant.name });
-                if (active_variant.type) |field_type| {
-                    try writer.writeAll("(");
-                    try formatType(field_type, erased, writer);
-                    try writer.writeAll(")");
-                }
-            } else {
-                try writer.print("{s}.unknown(", .{t.name});
-                try formatSliceAsHex(slice, writer);
-                try writer.writeAll(")");
-            }
-        },
+        .@"union" => |*t| try formatUnion(t, erased, writer),
         .@"fn" => {
             @panic("unimplemented");
         },
@@ -177,6 +160,30 @@ pub fn formatEnum(
     std.mem.copyForwards(u8, std.mem.asBytes(&value), slice[0..size]); // TODO: test if works on big-endian
     const variant = info.getNameFromValue(value).?;
     try writer.print("{s}.{s}", .{ info.name, variant });
+}
+
+pub fn formatUnion(
+    info: *const Type.Union,
+    erased: *const anyopaque,
+    writer: std.io.AnyWriter,
+) anyerror!void {
+    const slice = util.makeSlice(u8, @ptrCast(erased), info.size);
+    if (info.hasSafetyTag()) {
+        const tag_offset = info.size / 2;
+        var tag: usize = 0;
+        std.mem.copyForwards(u8, std.mem.asBytes(&tag), slice[tag_offset..]); // TODO: test if works on big-endian
+        const active_variant = info.fields[tag];
+        try writer.print("{s}.{s}", .{ info.name, active_variant.name });
+        if (active_variant.type) |field_type| {
+            try writer.writeAll("(");
+            try formatType(field_type, erased, writer);
+            try writer.writeAll(")");
+        }
+    } else {
+        try writer.print("{s}.unknown(", .{info.name});
+        try formatSliceAsHex(slice, writer);
+        try writer.writeAll(")");
+    }
 }
 
 pub fn formatSliceAsHex(slice: []const u8, writer: std.io.AnyWriter) anyerror!void {

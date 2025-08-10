@@ -136,7 +136,7 @@ pub const TypeRegistry = struct {
 
     fn registerStruct(self: *Self, comptime T: type) !Type {
         const info = @typeInfo(T).@"struct";
-        if (info.layout == .@"packed") return error.PackedStructUnsupported;
+        if (info.layout == .@"packed") unsupportedType("packed struct");
         const fields = try self.allocator.alloc(Type.StructField, info.fields.len);
         errdefer self.allocator.free(fields);
         inline for (info.fields, 0..) |field, i| {
@@ -227,15 +227,15 @@ pub const TypeRegistry = struct {
     fn registerFn(self: *Self, comptime T: type) !Type {
         const info = @typeInfo(T).@"fn";
         std.debug.print("{}\n", .{info.is_generic});
-        if (info.is_generic) return error.GenericFnUnsupported; // FIXME: switch on corrupt value panic
-        if (info.is_var_args) return error.VarArgFnUnsupported;
+        if (info.is_generic) unsupportedType("generic function");
+        if (info.is_var_args) unsupportedType("vararg function");
 
         const return_type = self.registerType(info.return_type);
         const params = try self.allocator.alloc(*Type, info.params.len);
         errdefer self.allocator.free(params);
         inline for (info.params, 0..) |param, i| {
-            if (param.is_generic) return error.GenericFnUnsupported;
-            const param_type = param.type orelse return error.GenericFnUnsupported;
+            if (param.is_generic) unsupportedType("generic function");
+            const param_type = param.type orelse unsupportedType("generic function");
             params[i] = try self.registerType(param_type);
         }
         return Type{ .@"fn" = .{
@@ -245,6 +245,10 @@ pub const TypeRegistry = struct {
         } };
     }
 };
+
+fn unsupportedType(comptime name: []const u8) noreturn {
+    @compileError("runtime type information not supported for " ++ name);
+}
 
 test "TypeRegistry register struct" {
     const expect = std.testing.expect;

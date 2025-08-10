@@ -1,6 +1,6 @@
 .{
     .name = .rtti,
-    .version = "0.0.0",
+    .version = "0.1.0",
     .fingerprint = 0xccb71289a57307a3,
     .minimum_zig_version = "0.14.1",
 

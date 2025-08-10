@@ -143,12 +143,22 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
                     writer.writeAll(")") catch return error.FormatError;
                 }
             } else {
-                writer.print("{s}.unknown", .{t.name}) catch return error.FormatError;
-                // TODO: format slice as hex
+                writer.print("{s}.unknown(", .{t.name}) catch return error.FormatError;
+                try formatSliceAsHex(slice, writer);
+                writer.writeAll(")") catch return error.FormatError;
             }
         },
         .@"fn" => {
             @panic("unimplemented");
         },
+    }
+}
+
+pub fn formatSliceAsHex(slice: []const u8, writer: std.io.AnyWriter) RTTIError!void {
+    for (slice, 0..) |byte, i| {
+        writer.print("{X:0>2}", .{byte}) catch return error.FormatError;
+        if (i < slice.len - 1) {
+            writer.writeByte(' ') catch return error.FormatError;
+        }
     }
 }

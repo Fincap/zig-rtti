@@ -25,15 +25,7 @@ pub fn formatType(
             try formatStruct(t, erased, writer);
             try writer.writeAll(" }");
         },
-        .optional => |*t| {
-            const option_offset: usize = info.size() / 2;
-            const is_some = slice[option_offset] != 0;
-            if (is_some) {
-                try formatType(t.child, erased, writer);
-            } else {
-                try writer.writeAll("null");
-            }
-        },
+        .optional => |*t| try formatOptional(t, erased, writer),
         .@"enum" => |*t| {
             const size = t.tag_type.size();
             if (size > 8) @panic("enum tags greater than 64 bits unsupported");
@@ -162,6 +154,21 @@ pub fn formatStruct(
         try writer.print("{s}{s}: ", .{ field_info.name, option_prefix });
         try formatType(field_info.type, field_ptr, writer);
         if (i < info.fields.len - 1) try writer.writeAll(", ");
+    }
+}
+
+pub fn formatOptional(
+    info: *const Type.Optional,
+    erased: *const anyopaque,
+    writer: std.io.AnyWriter,
+) anyerror!void {
+    const slice = util.makeSlice(u8, @ptrCast(erased), info.size());
+    const option_offset: usize = info.size() / 2;
+    const is_some = slice[option_offset] != 0;
+    if (is_some) {
+        try formatType(info.child, erased, writer);
+    } else {
+        try writer.writeAll("null");
     }
 }
 

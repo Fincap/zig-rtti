@@ -175,6 +175,7 @@ pub const Type = union(enum) {
         const Self = @This();
 
         name: []const u8,
+        layout: std.builtin.Type.ContainerLayout,
         fields: []const StructField,
         decls: []const Declaration,
         size: usize,

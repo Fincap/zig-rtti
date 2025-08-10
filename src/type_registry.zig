@@ -136,6 +136,7 @@ pub const TypeRegistry = struct {
 
     fn registerStruct(self: *Self, comptime T: type) !Type {
         const info = @typeInfo(T).@"struct";
+        if (info.layout == .@"packed") return error.PackedStructUnsupported;
         const fields = try self.allocator.alloc(Type.StructField, info.fields.len);
         errdefer self.allocator.free(fields);
         inline for (info.fields, 0..) |field, i| {
@@ -155,6 +156,7 @@ pub const TypeRegistry = struct {
         }
         return Type{ .@"struct" = .{
             .name = @typeName(T),
+            .layout = info.layout,
             .fields = fields,
             .decls = decls,
             .size = @sizeOf(T),

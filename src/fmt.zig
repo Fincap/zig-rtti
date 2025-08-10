@@ -81,7 +81,7 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
                     }
                 },
                 .many => {
-                    @panic("unimplemented");
+                    @panic("unimplemented"); // depends on adding `sentinel_ptr` to `Type.Pointer`
                 },
             }
         },

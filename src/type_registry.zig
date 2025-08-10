@@ -223,6 +223,7 @@ pub const TypeRegistry = struct {
         }
         return Type{ .@"union" = .{
             .name = @typeName(T),
+            .layout = info.layout,
             .tag_type = tag_type,
             .fields = fields,
             .decls = decls,

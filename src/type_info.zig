@@ -293,11 +293,9 @@ pub const Type = union(enum) {
     };
 
     /// Runtime equivalent of `std.builtin.Type.Union`.
-    ///
-    /// TODO: A regular union doesn’t have a guaranteed memory layout (a safety tag is added in
-    /// debug and release safe mode).
     pub const Union = struct {
         name: []const u8,
+        layout: std.builtin.Type.ContainerLayout,
         tag_type: ?*Type,
         fields: []const UnionField,
         decls: []const Declaration,
@@ -306,6 +304,22 @@ pub const Type = union(enum) {
         pub fn deinit(self: *Union, allocator: Allocator) void {
             allocator.free(self.fields);
             allocator.free(self.decls);
+        }
+
+        /// A regular union doesn’t have a guaranteed memory layout (a safety tag is added in debug
+        /// and release safe mode).
+        pub fn hasSafetyTag(self: Union) bool {
+            return self.size == self.largestVariantSize() * 2;
+        }
+
+        /// Returns the size of the largest union variant. In untagged unions with no added safety
+        /// tag,  this will be the size of the union.
+        pub fn largestVariantSize(self: Union) usize {
+            var max: usize = 0;
+            for (self.fields) |field| {
+                if (field.type) |field_type| max += field_type.size();
+            }
+            return max;
         }
     };
 
@@ -329,3 +343,10 @@ pub const Type = union(enum) {
         }
     };
 };
+
+test "Type.Union layout" {
+    // TODO: write tests
+    // if Union.layout == packed, expect tag_type == null
+    // if Union.layout == packed, expect Union.size == [largest field].size
+    // if Union.tag_type != null, expect Union.size == [largest field].size * 2
+}

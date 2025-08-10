@@ -53,8 +53,7 @@ pub fn build(b: *std.Build) void {
     const docs_install = b.addInstallDirectory(.{
         .install_dir = .prefix,
         .install_subdir = "docs",
-        .source_dir = lib.getEmittedLlvmIr(),
+        .source_dir = lib.getEmittedDocs(),
     });
     docs_step.dependOn(&docs_install.step);
-    b.getInstallStep().dependOn(docs_step);
 }

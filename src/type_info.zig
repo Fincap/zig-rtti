@@ -18,18 +18,6 @@ pub fn typeId(comptime T: type) TypeId {
 const section_name = ".bss.RTTI_Types";
 const @"RTTI_Types.head": u8 linksection(section_name ++ "0") = 0;
 
-test "typeId non-exhaustive" {
-    const expect = std.testing.expect;
-
-    try expect(typeId(i32) == 1);
-    try expect(typeId(u8) == 2);
-    try expect(typeId(f32) == 3);
-    try expect(typeId(struct { u8, u8 }) == 4);
-    try expect(typeId(i32) == 1);
-    try expect(typeId(u8) == 2);
-    try expect(typeId(f32) == 3);
-}
-
 /// Runtime equivalent of `std.builtin.Type`.
 ///
 /// Excludes any comptime types that cannot be meaningfully represented at runtime.

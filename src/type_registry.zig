@@ -9,6 +9,8 @@ const util = rtti.util;
 const StableMap = @import("stable_map.zig").StableMap;
 
 /// Registry of runtime information for types.
+///
+/// TODO: add method to support registering runtime-created `Type`
 pub const TypeRegistry = struct {
     const Self = @This();
 

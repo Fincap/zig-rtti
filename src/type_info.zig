@@ -32,7 +32,7 @@ test "typeId non-exhaustive" {
 
 /// Runtime equivalent of `std.builtin.Type`.
 ///
-/// Excludes any comptime types that cannot be meaningfully represent at runtime.
+/// Excludes any comptime types that cannot be meaningfully represented at runtime.
 pub const Type = union(enum) {
     bool: void,
     int: Int,
@@ -62,6 +62,7 @@ pub const Type = union(enum) {
             .pointer => |t| t.name,
             .array => |t| t.name,
             .@"struct" => |t| t.name,
+            .optional => |t| t.name,
             .@"enum" => |t| t.name,
             .@"union" => |t| t.name,
             else => @tagName(self),

@@ -72,13 +72,13 @@ pub const Type = union(enum) {
     pub fn size(self: Type) usize {
         return switch (self) {
             .bool => @sizeOf(bool),
-            .int => |t| util.bitsToBytesCeil(t.bits),
-            .float => |t| util.bitsToBytesCeil(t.bits),
+            .int => |t| t.size(),
+            .float => |t| t.size(),
             .pointer => |t| t.sizeInBytes(),
-            .array => |t| t.len * t.child.size(),
+            .array => |t| t.size(),
             .@"struct" => |t| t.size,
-            .optional => |t| t.child.size() * 2,
-            .@"enum" => |t| t.tag_type.size(),
+            .optional => |t| t.size(),
+            .@"enum" => |t| t.size(),
             .@"union" => |t| t.size,
             .@"fn" => @panic("unimplemented!"),
         };
@@ -103,6 +103,10 @@ pub const Type = union(enum) {
                 else => @panic("arbitrary bit-width integers not supported"),
             };
         }
+
+        pub fn size(self: Int) usize {
+            return util.bitsToBytesCeil(self.bits);
+        }
     };
 
     /// Runtime equivalent of `std.builtin.Type.Float`.
@@ -118,6 +122,10 @@ pub const Type = union(enum) {
                 128 => return @typeName(f128),
                 else => @panic("unsupported float width"),
             }
+        }
+
+        pub fn size(self: Float) usize {
+            return util.bitsToBytesCeil(self.bits);
         }
     };
 
@@ -162,6 +170,10 @@ pub const Type = union(enum) {
         name: []const u8,
         len: usize,
         child: *Type,
+
+        pub fn size(self: Array) usize {
+            return self.len * self.child.size();
+        }
     };
 
     /// Runtime equivalent of `std.builtin.Type.Struct`.
@@ -306,6 +318,10 @@ pub const Type = union(enum) {
     pub const Optional = struct {
         name: []const u8,
         child: *Type,
+
+        pub fn size(self: Optional) usize {
+            return self.child.size() * 2;
+        }
     };
 
     /// Runtime equivalent of `std.builtin.Type.Enum`.
@@ -330,6 +346,10 @@ pub const Type = union(enum) {
                 if (field.value == value) return field.name;
             }
             return null;
+        }
+
+        pub fn size(self: Enum) usize {
+            return self.tag_type.size();
         }
     };
 

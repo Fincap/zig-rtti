@@ -123,6 +123,12 @@ pub const Type = union(enum) {
 
     /// Runtime equivalent of `std.builtin.Type.Pointer`.
     ///
+    /// Fields excluded:
+    /// - `is_volatile`: `bool`
+    /// - `address_space`: `AddressSpace`
+    /// - `is_allowzero`: `bool`
+    /// - `sentinel_ptr`: `?*const anyopaque`
+    ///
     /// e.g. []const u8 -> {size: .slice, is_const: true, alignment: 1, child: u8}
     pub const Pointer = struct {
         name: []const u8,
@@ -148,6 +154,9 @@ pub const Type = union(enum) {
 
     /// Runtime equivalent of `std.builtin.Type.Array`.
     ///
+    /// Fields excluded:
+    /// - `sentinel_ptr`: `?*const anyopaque`
+    ///
     /// e.g. [5]u8 -> {len: 5, child: u8}
     pub const Array = struct {
         name: []const u8,
@@ -157,14 +166,9 @@ pub const Type = union(enum) {
 
     /// Runtime equivalent of `std.builtin.Type.Struct`.
     ///
-    /// Lacking fields from comptime (I'm open to adding them):
-    /// - `layout`: `ContainerLayout` TODO: implement
+    /// Fields excluded:
     /// - `backing_integer`: `?type`
     /// - `is_tuple`: `bool`
-    ///
-    /// Runtime-exclusive fields:
-    /// - `size`: `usize`
-    /// - `alignment`: `usize`
     ///
     /// Allocated fields are be owned by the `TypeRegistry` that created this struct.
     pub const Struct = struct {
@@ -250,13 +254,11 @@ pub const Type = union(enum) {
 
     /// Runtime equivalent of `std.builtin.Type.Declaration`.
     pub const Declaration = struct {
-        const Self = @This();
-
         name: []const u8,
 
-        pub fn format(self: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        pub fn format(self: Declaration, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
             _ = .{ fmt, options };
-            try writer.print("{}{{ .name = \"{s}\" }}", .{ Self, self.name });
+            try writer.print("{}{{ .name = \"{s}\" }}", .{ Declaration, self.name });
         }
     };
 
@@ -267,6 +269,11 @@ pub const Type = union(enum) {
     };
 
     /// Runtime equivalent of `std.builtin.Type.Enum`.
+    ///
+    /// Fields excluded:
+    /// - `is_exhaustive`: `bool`
+    ///
+    /// Allocated fields are be owned by the `TypeRegistry` that created this struct.
     pub const Enum = struct {
         name: []const u8,
         tag_type: *Type,
@@ -293,6 +300,8 @@ pub const Type = union(enum) {
     };
 
     /// Runtime equivalent of `std.builtin.Type.Union`.
+    ///
+    /// Allocated fields are be owned by the `TypeRegistry` that created this struct.
     pub const Union = struct {
         name: []const u8,
         layout: std.builtin.Type.ContainerLayout,

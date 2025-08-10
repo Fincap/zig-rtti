@@ -131,15 +131,20 @@ pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []co
             writer.print("{s}.{s}", .{ t.name, variant }) catch return error.FormatError;
         },
         .@"union" => |*t| {
-            const variant_offset = t.size / 2;
-            var variant: usize = 0;
-            std.mem.copyForwards(u8, std.mem.asBytes(&variant), slice[variant_offset..]); // TODO: test if works on big-endian
-            const active_field = t.fields[variant];
-            writer.print("{s}.{s}", .{ t.name, active_field.name }) catch return error.FormatError;
-            if (active_field.type) |field_type| {
-                writer.writeAll("(") catch return error.FormatError;
-                try formatSlice(registry, field_type, slice[0..variant_offset], writer);
-                writer.writeAll(")") catch return error.FormatError;
+            if (t.hasSafetyTag()) {
+                const tag_offset = t.size / 2;
+                var tag: usize = 0;
+                std.mem.copyForwards(u8, std.mem.asBytes(&tag), slice[tag_offset..]); // TODO: test if works on big-endian
+                const active_variant = t.fields[tag];
+                writer.print("{s}.{s}", .{ t.name, active_variant.name }) catch return error.FormatError;
+                if (active_variant.type) |field_type| {
+                    writer.writeAll("(") catch return error.FormatError;
+                    try formatSlice(registry, field_type, slice[0..tag_offset], writer);
+                    writer.writeAll(")") catch return error.FormatError;
+                }
+            } else {
+                writer.print("{s}.unknown", .{t.name}) catch return error.FormatError;
+                // TODO: format slice as hex
             }
         },
         .@"fn" => {

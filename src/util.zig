@@ -65,20 +65,30 @@ pub inline fn isPointerSized(comptime T: type) bool {
     return T == usize or T == isize;
 }
 
+/// Given a type name, returns if the type is a pointer. This does not check any child types.
 pub fn isPointer(type_name: []const u8) bool {
     return std.mem.startsWith(u8, type_name, "*");
 }
 
+/// Given a type name, returns if the type is a slice. This does not check any child types.
 pub fn isSlice(type_name: []const u8) bool {
     return std.mem.startsWith(u8, type_name, "[]");
 }
 
+/// Given a type name, returns if the type is an optional. This does not check any child types.
 pub fn isOptional(type_name: []const u8) bool {
     return std.mem.startsWith(u8, type_name, "?");
 }
 
+/// Returns true if the given struct, enum, union or opaque has a method of the given name.
 pub inline fn hasMethod(comptime T: type, comptime method: []const u8) bool {
     const t = @typeInfo(T);
     if (t != .@"struct" and t != .@"enum" and t != .@"union" and t != .@"opaque") return false;
     return @hasDecl(T, method) and @typeInfo(@TypeOf(@field(T, method))) == .@"fn";
+}
+
+/// For a given number of bits, returns the power-of-two number of bytes required to store a value
+/// of the given bit width.
+pub inline fn bitsToBytesCeil(bits: usize) usize {
+    return (bits + 7) / 8;
 }

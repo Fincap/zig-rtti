@@ -72,8 +72,8 @@ pub const Type = union(enum) {
     pub fn size(self: Type) usize {
         return switch (self) {
             .bool => @sizeOf(bool),
-            .int => |t| (t.bits + 7) / 8,
-            .float => |t| (t.bits + 7) / 8,
+            .int => |t| util.bitsToBytesCeil(t.bits),
+            .float => |t| util.bitsToBytesCeil(t.bits),
             .pointer => |t| t.sizeInBytes(),
             .array => |t| t.len * t.child.size(),
             .@"struct" => |t| t.size,

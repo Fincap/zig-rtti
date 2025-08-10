@@ -1,11 +1,11 @@
 # zig-rtti
 Runtime Type Information for Zig.
 
-Exposes the `TypeRegistry` container which can be used to store runtime information about a type
-that has been registered at comptime.
+This library provides a `TypeRegistry` container for storing runtime information about types that 
+are registered at comptime.
 
-`Type` adapts the `std.builtin.Type` child structs for types that are able to be meaningfully
-represented at runtime:
+Adds in `Type`, which adapts `std.builtin.Type` to work with the subset of Zig types that are able
+to be meaningfully represented at runtime:
 - bool
 - Int
 - Float
@@ -16,13 +16,14 @@ represented at runtime:
 - Enum
 - Union
 
-Where any type needs to reference a child type (e.g. pointers, struct fields, optionals), the 
-`Type` will hold a pointer to another instance of the `Type` struct. This is possible because the 
-`TypeRegistry` stores `Type` instances at [stable addresses](src/stable_map.zig), and the registered
-types are assumed to live as long as the registry.
+When a type refers to another type (for example, a pointer’s target, a struct’s field type, or an
+optional’s payload), its `Type` holds a pointer to the corresponding `Type` instance. This works 
+because the `TypeRegistry` stores all `Type` instances at [stable addresses](src/stable_map.zig), 
+and the registered types are assumed to remain valid for the lifetime of the registry.
 
-The library includes a [formatter module](src/fmt.zig) that can be used to inspect an opaque pointer
-and output to `std.io.AnyWriter`, and is an example of how runtime type information can be utilized.
+The library also includes a [formatter module](src/fmt.zig) that can inspect an opaque pointer and 
+write a human-readable representation to any `std.io.AnyWriter`, and is an example of how runtime 
+type information can be utilized.
 
 ## Installation
 Add zig-rtti as a dependency by running the following command in your project root:
@@ -53,7 +54,7 @@ pub fn main() !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const allocator = arena.allocator();
 
-    // `TypeRegistry` is the backing storage of type information.
+    // `TypeRegistry` holds all registerted type metadata.
     var type_registry = rtti.TypeRegistry.init(allocator);
     defer type_registry.deinit();
 
@@ -64,11 +65,10 @@ pub fn main() !void {
     };
     const info = try type_registry.registerType(MyStruct);
 
-    // Create a type-erased pointer to a new instance of our struct.
+    // Create a type-erased pointer to an instance of `MyStruct`.
     const erased: *const anyopaque = &MyStruct{ .number = 14, .text = "hello" };
 
-    // Use the library's default formatting utility functions to print out the type-erased struct's
-    // values at runtime.
+    // Use the built-in formatter to print the type-erased struct’s fields at runtime.
     const writer = std.io.getStdOut().writer().any();
     try rtti.fmt.formatType(info, erased, writer);
     // Output: { number: 14, text: "hello" }

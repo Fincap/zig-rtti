@@ -6,7 +6,6 @@ const TypeRegistry = rtti.TypeRegistry;
 const util = rtti.util;
 
 pub fn formatType(
-    registry: *const TypeRegistry,
     info: *const Type,
     erased: *const anyopaque,
     writer: std.io.AnyWriter,
@@ -24,7 +23,7 @@ pub fn formatType(
                 .one, .c => {
                     const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
                     try writer.writeAll("*");
-                    try formatType(registry, t.child, ptr, writer);
+                    try formatType(t.child, ptr, writer);
                 },
                 .slice => {
                     const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
@@ -41,7 +40,7 @@ pub fn formatType(
                         var i: usize = 0;
                         try writer.writeAll("{");
                         while (i < array_end) {
-                            try formatType(registry, t.child, ptr + i, writer);
+                            try formatType(t.child, ptr + i, writer);
                             if (i < (len - 1) * size) try writer.writeAll(", ");
                             i += size;
                         }
@@ -59,7 +58,7 @@ pub fn formatType(
             var i: usize = 0;
             try writer.writeAll("{");
             while (i < array_end) {
-                try formatType(registry, t.child, slice.ptr + i, writer);
+                try formatType(t.child, slice.ptr + i, writer);
                 if (i < (t.len - 1) * size) try writer.writeAll(", ");
                 i += size;
             }
@@ -67,14 +66,14 @@ pub fn formatType(
         },
         .@"struct" => |*t| {
             try writer.writeAll("{ ");
-            try formatStruct(registry, t, erased, writer);
+            try formatStruct(t, erased, writer);
             try writer.writeAll(" }");
         },
         .optional => |*t| {
             const option_offset: usize = info.size() / 2;
             const is_some = slice[option_offset] != 0;
             if (is_some) {
-                try formatType(registry, t.child, erased, writer);
+                try formatType(t.child, erased, writer);
             } else {
                 try writer.writeAll("null");
             }
@@ -96,7 +95,7 @@ pub fn formatType(
                 try writer.print("{s}.{s}", .{ t.name, active_variant.name });
                 if (active_variant.type) |field_type| {
                     try writer.writeAll("(");
-                    try formatType(registry, field_type, erased, writer);
+                    try formatType(field_type, erased, writer);
                     try writer.writeAll(")");
                 }
             } else {
@@ -148,7 +147,6 @@ pub fn formatFloat(
 }
 
 pub fn formatStruct(
-    registry: *const TypeRegistry,
     info: *const Type.Struct,
     erased: *const anyopaque,
     writer: std.io.AnyWriter,
@@ -157,7 +155,7 @@ pub fn formatStruct(
         const field_ptr = info.getFieldPtrIndexed(erased, i);
         const option_prefix = if (field_info.type.* == .optional) "?" else "";
         try writer.print("{s}{s}: ", .{ field_info.name, option_prefix });
-        try formatType(registry, field_info.type, field_ptr, writer);
+        try formatType(field_info.type, field_ptr, writer);
         if (i < info.fields.len - 1) try writer.writeAll(", ");
     }
 }

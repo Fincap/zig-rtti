@@ -53,7 +53,7 @@ pub fn main() !void {
 
     const test_struct = TestStruct{};
     const info = try registry.registerType(TestStruct);
-    try fmt.formatType(&registry, info, &test_struct, std.io.getStdOut().writer().any());
+    try fmt.formatType(info, &test_struct, std.io.getStdOut().writer().any());
 }
 
 test {

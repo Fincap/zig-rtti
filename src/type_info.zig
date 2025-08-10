@@ -167,13 +167,13 @@ pub const Type = union(enum) {
     /// Runtime equivalent of `std.builtin.Type.Struct`.
     ///
     /// Fields excluded:
+    /// - `layout`: `ContainerLayout`
     /// - `backing_integer`: `?type`
     /// - `is_tuple`: `bool`
     ///
     /// Allocated fields are be owned by the `TypeRegistry` that created this struct.
     pub const Struct = struct {
         name: []const u8,
-        layout: std.builtin.Type.ContainerLayout,
         fields: []const StructField,
         decls: []const Declaration,
         size: usize,

@@ -156,7 +156,6 @@ pub const TypeRegistry = struct {
         }
         return Type{ .@"struct" = .{
             .name = @typeName(T),
-            .layout = info.layout,
             .fields = fields,
             .decls = decls,
             .size = @sizeOf(T),

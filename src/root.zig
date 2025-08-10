@@ -35,7 +35,7 @@ const TestStruct = struct {
     number: i32 = 123,
     float: f16 = 9.99,
     pointer: *const f64 = &@as(f64, std.math.pi),
-    array: [4]u8 = [_]u8{ 10, 9, 8, 7 },
+    array: [4]u32 = [_]u32{ 10, 9, 8, 7 },
     inner: InnerStruct = .{ .text = "test" },
     maybe: ?bool = null,
     test_enum: TestEnum = .c,

@@ -18,52 +18,8 @@ pub fn formatType(
         },
         .int => |*t| try formatInt(t, erased, writer),
         .float => |*t| try formatFloat(t, erased, writer),
-        .pointer => |*t| {
-            switch (t.size) {
-                .one, .c => {
-                    const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
-                    try writer.writeAll("*");
-                    try formatType(t.child, ptr, writer);
-                },
-                .slice => {
-                    const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
-                    const len = util.numberFromBytes(usize, slice[8..16]);
-
-                    if (std.mem.eql(u8, t.child.typeName(), "u8")) {
-                        // Format string
-                        const string = util.makeSlice(u8, ptr, len);
-                        try writer.print("\"{s}\"", .{string});
-                    } else {
-                        // Format array
-                        const size = t.child.size();
-                        const array_end = len * size;
-                        var i: usize = 0;
-                        try writer.writeAll("{");
-                        while (i < array_end) {
-                            try formatType(t.child, ptr + i, writer);
-                            if (i < (len - 1) * size) try writer.writeAll(", ");
-                            i += size;
-                        }
-                        try writer.writeAll("}");
-                    }
-                },
-                .many => {
-                    @panic("unimplemented"); // depends on adding `sentinel_ptr` to `Type.Pointer`
-                },
-            }
-        },
-        .array => |*t| {
-            const size = t.child.size();
-            const array_end = t.len * size;
-            var i: usize = 0;
-            try writer.writeAll("{");
-            while (i < array_end) {
-                try formatType(t.child, slice.ptr + i, writer);
-                if (i < (t.len - 1) * size) try writer.writeAll(", ");
-                i += size;
-            }
-            try writer.writeAll("}");
-        },
+        .pointer => |*t| try formatPointer(t, erased, writer),
+        .array => |*t| try formatArray(t.child, erased, t.len, writer),
         .@"struct" => |*t| {
             try writer.writeAll("{ ");
             try formatStruct(t, erased, writer);
@@ -144,6 +100,55 @@ pub fn formatFloat(
             break;
         }
     }
+}
+
+pub fn formatPointer(
+    info: *const Type.Pointer,
+    erased: *const anyopaque,
+    writer: std.io.AnyWriter,
+) anyerror!void {
+    const slice = util.makeSlice(u8, @ptrCast(erased), info.sizeInBytes());
+    switch (info.size) {
+        .one, .c => {
+            const child_ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
+            try writer.writeAll("*");
+            try formatType(info.child, child_ptr, writer);
+        },
+        .slice => {
+            const child_ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
+            const len = util.numberFromBytes(usize, slice[8..16]);
+
+            if (std.mem.eql(u8, info.child.typeName(), "u8")) {
+                // Interpret u8 slice as string
+                const string = util.makeSlice(u8, child_ptr, len);
+                try writer.print("\"{s}\"", .{string});
+            } else {
+                try formatArray(info.child, child_ptr, len, writer);
+            }
+        },
+        .many => {
+            @panic("unimplemented"); // depends on adding `sentinel_ptr` to `Type.Pointer`
+        },
+    }
+}
+
+pub fn formatArray(
+    child_type: *const Type,
+    ptr: *const anyopaque,
+    len: usize,
+    writer: std.io.AnyWriter,
+) anyerror!void {
+    const array_ptr: [*]const u8 = @ptrCast(ptr);
+    const elem_size = child_type.size();
+    const array_end = len * elem_size;
+    var i: usize = 0;
+    try writer.writeAll("{");
+    while (i < array_end) {
+        try formatType(child_type, array_ptr + i, writer);
+        if (i < (len - 1) * elem_size) try writer.writeAll(", ");
+        i += elem_size;
+    }
+    try writer.writeAll("}");
 }
 
 pub fn formatStruct(

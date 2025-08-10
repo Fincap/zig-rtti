@@ -6,7 +6,7 @@ const Type = rtti.type_info.Type;
 const TypeRegistry = rtti.TypeRegistry;
 const util = rtti.util;
 
-pub const CustomFormatter = *const fn (struct_ptr: *const anyopaque, writer: std.io.AnyWriter) RTTIError!void;
+pub const CustomFormatter = *const fn (struct_ptr: *const anyopaque, writer: std.io.AnyWriter) error{CustomFormatError}!void;
 
 pub fn tryFormatStruct(registry: *const TypeRegistry, info: *const Type.Struct, ptr: *const anyopaque, writer: std.io.AnyWriter) anyerror!void {
     for (info.fields, 0..) |field_info, i| {

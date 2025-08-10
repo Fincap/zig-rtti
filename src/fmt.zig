@@ -5,36 +5,13 @@ const Type = rtti.type_info.Type;
 const TypeRegistry = rtti.TypeRegistry;
 const util = rtti.util;
 
-pub fn tryFormatStruct(
-    registry: *const TypeRegistry,
-    info: *const Type.Struct,
-    ptr: *const anyopaque,
-    writer: std.io.AnyWriter,
-) anyerror!void {
-    for (info.fields, 0..) |field_info, i| {
-        const field_slice = info.getFieldSliceIndexed(ptr, i);
-        const option_prefix = if (field_info.type.* == .optional) "?" else "";
-        try writer.print("{s}{s}: ", .{ field_info.name, option_prefix });
-        try tryFormatField(registry, &field_info, field_slice, writer);
-        if (i < info.fields.len - 1) try writer.writeAll(", ");
-    }
-}
-
-pub fn tryFormatField(
-    registry: *const TypeRegistry,
-    info: *const Type.StructField,
-    slice: []const u8,
-    writer: std.io.AnyWriter,
-) anyerror!void {
-    try formatSlice(registry, info.type, slice, writer);
-}
-
-pub fn formatSlice(
+pub fn formatType(
     registry: *const TypeRegistry,
     info: *const Type,
-    slice: []const u8,
+    erased: *const anyopaque,
     writer: std.io.AnyWriter,
 ) anyerror!void {
+    const slice = util.makeSlice(u8, @ptrCast(erased), info.size());
     switch (info.*) {
         .bool => {
             const value = slice[0] != 0;
@@ -68,10 +45,8 @@ pub fn formatSlice(
             switch (t.size) {
                 .one, .c => {
                     const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
-                    const len = t.child.size();
-                    const inner_slice = util.makeSlice(u8, ptr, len);
                     try writer.writeAll("*");
-                    try formatSlice(registry, t.child, inner_slice, writer);
+                    try formatType(registry, t.child, ptr, writer);
                 },
                 .slice => {
                     const ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
@@ -88,7 +63,7 @@ pub fn formatSlice(
                         var i: usize = 0;
                         try writer.writeAll("{");
                         while (i < array_end) {
-                            try formatSlice(registry, t.child, util.makeSlice(u8, ptr + i, size), writer);
+                            try formatType(registry, t.child, ptr + i, writer);
                             if (i < (len - 1) * size) try writer.writeAll(", ");
                             i += size;
                         }
@@ -106,22 +81,22 @@ pub fn formatSlice(
             var i: usize = 0;
             try writer.writeAll("{");
             while (i < array_end) {
-                try formatSlice(registry, t.child, util.makeSlice(u8, slice.ptr + i, size), writer);
+                try formatType(registry, t.child, slice.ptr + i, writer);
                 if (i < (t.len - 1) * size) try writer.writeAll(", ");
                 i += size;
             }
             try writer.writeAll("}");
         },
-        .@"struct" => {
+        .@"struct" => |*t| {
             try writer.writeAll("{ ");
-            try tryFormatStruct(registry, &info.@"struct", @ptrCast(slice.ptr), writer);
+            try formatStruct(registry, t, erased, writer);
             try writer.writeAll(" }");
         },
         .optional => |*t| {
             const option_offset: usize = info.size() / 2;
             const is_some = slice[option_offset] != 0;
             if (is_some) {
-                try formatSlice(registry, t.child, slice[0..option_offset], writer);
+                try formatType(registry, t.child, erased, writer);
             } else {
                 try writer.writeAll("null");
             }
@@ -143,7 +118,7 @@ pub fn formatSlice(
                 try writer.print("{s}.{s}", .{ t.name, active_variant.name });
                 if (active_variant.type) |field_type| {
                     try writer.writeAll("(");
-                    try formatSlice(registry, field_type, slice[0..tag_offset], writer);
+                    try formatType(registry, field_type, erased, writer);
                     try writer.writeAll(")");
                 }
             } else {
@@ -155,6 +130,21 @@ pub fn formatSlice(
         .@"fn" => {
             @panic("unimplemented");
         },
+    }
+}
+
+pub fn formatStruct(
+    registry: *const TypeRegistry,
+    info: *const Type.Struct,
+    erased: *const anyopaque,
+    writer: std.io.AnyWriter,
+) anyerror!void {
+    for (info.fields, 0..) |field_info, i| {
+        const field_ptr = info.getFieldPtrIndexed(erased, i);
+        const option_prefix = if (field_info.type.* == .optional) "?" else "";
+        try writer.print("{s}{s}: ", .{ field_info.name, option_prefix });
+        try formatType(registry, field_info.type, field_ptr, writer);
+        if (i < info.fields.len - 1) try writer.writeAll(", ");
     }
 }
 

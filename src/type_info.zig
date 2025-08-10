@@ -196,6 +196,16 @@ pub const Type = union(enum) {
             return null;
         }
 
+        pub fn getFieldPtrIndexed(
+            self: *const Struct,
+            struct_ptr: *const anyopaque,
+            field_index: usize,
+        ) *anyopaque {
+            const field = self.fields[field_index];
+            const field_address = @intFromPtr(struct_ptr) + field.offset;
+            return @ptrFromInt(field_address);
+        }
+
         pub fn getFieldSlice(
             self: *const Struct,
             struct_ptr: *const anyopaque,

@@ -2,7 +2,6 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 const rtti = @import("root.zig");
-const CustomFormatter = rtti.fmt.CustomFormatter;
 const Type = rtti.Type;
 const TypeId = rtti.type_info.TypeId;
 const typeId = rtti.type_info.typeId;
@@ -16,7 +15,6 @@ pub const TypeRegistry = struct {
     allocator: Allocator,
     registered_types: TypeMap = .empty,
     type_names: std.StringHashMapUnmanaged(TypeId) = .empty,
-    formatters: std.AutoHashMapUnmanaged(TypeId, CustomFormatter) = .empty,
 
     const TypeMap = StableMap(TypeId, Type, .{});
 
@@ -31,7 +29,6 @@ pub const TypeRegistry = struct {
         }
         self.registered_types.deinit(self.allocator);
         self.type_names.deinit(self.allocator);
-        self.formatters.deinit(self.allocator);
     }
 
     /// Registers the given type, and recursively registers the types of any child types (i.e.
@@ -64,11 +61,6 @@ pub const TypeRegistry = struct {
             .@"fn" => @compileError("unimplemented"),
             else => @compileError("cannot register comptime-only type " ++ @typeName(T)),
         };
-
-        // Try load custom formatter
-        if (util.hasMethod(T, "customFormat")) {
-            self.setFormatter(T, &@field(T, "customFormat"));
-        }
 
         return self.registered_types.getPtr(type_id).?; // Re-obtain pointer in case any other types were recursively registered.
 
@@ -250,12 +242,6 @@ pub const TypeRegistry = struct {
             .return_type = return_type,
             .params = params,
         } };
-    }
-
-    fn setFormatter(self: *Self, comptime T: type, formatter: CustomFormatter) void {
-        const type_id = typeId(T);
-        std.debug.assert(self.registered_structs.contains(type_id));
-        try self.formatters.put(self.allocator, type_id, formatter);
     }
 };
 

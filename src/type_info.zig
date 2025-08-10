@@ -172,8 +172,6 @@ pub const Type = union(enum) {
     ///
     /// Allocated fields are be owned by the `TypeRegistry` that created this struct.
     pub const Struct = struct {
-        const Self = @This();
-
         name: []const u8,
         layout: std.builtin.Type.ContainerLayout,
         fields: []const StructField,
@@ -181,12 +179,12 @@ pub const Type = union(enum) {
         size: usize,
         alignment: usize,
 
-        pub fn deinit(self: *Self, allocator: Allocator) void {
+        pub fn deinit(self: *Struct, allocator: Allocator) void {
             allocator.free(self.fields);
             allocator.free(self.decls);
         }
 
-        pub fn getFieldPtr(self: *const Self, struct_ptr: *const anyopaque, field_name: []const u8) ?*anyopaque {
+        pub fn getFieldPtr(self: *const Struct, struct_ptr: *const anyopaque, field_name: []const u8) ?*anyopaque {
             if (self.getFieldIndex(field_name)) |i| {
                 const field = self.fields[i];
                 return @ptrFromInt(@intFromPtr(struct_ptr) + field.offset);
@@ -194,21 +192,21 @@ pub const Type = union(enum) {
             return null;
         }
 
-        pub fn getFieldSlice(self: *const Self, struct_ptr: *const anyopaque, field_name: []const u8) ?[]const u8 {
+        pub fn getFieldSlice(self: *const Struct, struct_ptr: *const anyopaque, field_name: []const u8) ?[]const u8 {
             if (self.getFieldIndex(field_name)) |i| {
                 return self.getFieldSliceIndexed(struct_ptr, i);
             }
             return null;
         }
 
-        pub fn getFieldSliceIndexed(self: *const Self, struct_ptr: *const anyopaque, field_index: usize) []const u8 {
+        pub fn getFieldSliceIndexed(self: *const Struct, struct_ptr: *const anyopaque, field_index: usize) []const u8 {
             const field = self.fields[field_index];
             const field_address = @intFromPtr(struct_ptr) + field.offset;
             return util.makeSlice(u8, @ptrFromInt(field_address), field.type.size());
         }
 
         /// O(n) search.
-        pub fn getFieldIndex(self: *const Self, field_name: []const u8) ?usize {
+        pub fn getFieldIndex(self: *const Struct, field_name: []const u8) ?usize {
             for (self.fields, 0..) |field, i| {
                 if (std.mem.eql(u8, field_name, field.name)) {
                     return i;
@@ -217,7 +215,7 @@ pub const Type = union(enum) {
             return null;
         }
 
-        pub fn getSlice(self: *const Self, struct_ptr: *const anyopaque) []const u8 {
+        pub fn getSlice(self: *const Struct, struct_ptr: *const anyopaque) []const u8 {
             return util.makeSlice(u8, struct_ptr, self.size);
         }
 
@@ -239,8 +237,6 @@ pub const Type = union(enum) {
 
     /// Runtime equivalent of `std.builtin.Type.StructField`.
     pub const StructField = struct {
-        const Self = @This();
-
         name: []const u8,
         type: *Type,
         default_value_ptr: ?*const anyopaque,

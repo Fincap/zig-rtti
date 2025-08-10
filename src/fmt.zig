@@ -5,7 +5,12 @@ const Type = rtti.type_info.Type;
 const TypeRegistry = rtti.TypeRegistry;
 const util = rtti.util;
 
-pub fn tryFormatStruct(registry: *const TypeRegistry, info: *const Type.Struct, ptr: *const anyopaque, writer: std.io.AnyWriter) anyerror!void {
+pub fn tryFormatStruct(
+    registry: *const TypeRegistry,
+    info: *const Type.Struct,
+    ptr: *const anyopaque,
+    writer: std.io.AnyWriter,
+) anyerror!void {
     for (info.fields, 0..) |field_info, i| {
         const field_slice = info.getFieldSliceIndexed(ptr, i);
         const option_prefix = if (field_info.type.* == .optional) "?" else "";
@@ -15,11 +20,21 @@ pub fn tryFormatStruct(registry: *const TypeRegistry, info: *const Type.Struct, 
     }
 }
 
-pub fn tryFormatField(registry: *const TypeRegistry, info: *const Type.StructField, slice: []const u8, writer: std.io.AnyWriter) anyerror!void {
+pub fn tryFormatField(
+    registry: *const TypeRegistry,
+    info: *const Type.StructField,
+    slice: []const u8,
+    writer: std.io.AnyWriter,
+) anyerror!void {
     try formatSlice(registry, info.type, slice, writer);
 }
 
-pub fn formatSlice(registry: *const TypeRegistry, info: *const Type, slice: []const u8, writer: std.io.AnyWriter) anyerror!void {
+pub fn formatSlice(
+    registry: *const TypeRegistry,
+    info: *const Type,
+    slice: []const u8,
+    writer: std.io.AnyWriter,
+) anyerror!void {
     switch (info.*) {
         .bool => {
             const value = slice[0] != 0;

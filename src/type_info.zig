@@ -184,7 +184,11 @@ pub const Type = union(enum) {
             allocator.free(self.decls);
         }
 
-        pub fn getFieldPtr(self: *const Struct, struct_ptr: *const anyopaque, field_name: []const u8) ?*anyopaque {
+        pub fn getFieldPtr(
+            self: *const Struct,
+            struct_ptr: *const anyopaque,
+            field_name: []const u8,
+        ) ?*anyopaque {
             if (self.getFieldIndex(field_name)) |i| {
                 const field = self.fields[i];
                 return @ptrFromInt(@intFromPtr(struct_ptr) + field.offset);
@@ -192,14 +196,22 @@ pub const Type = union(enum) {
             return null;
         }
 
-        pub fn getFieldSlice(self: *const Struct, struct_ptr: *const anyopaque, field_name: []const u8) ?[]const u8 {
+        pub fn getFieldSlice(
+            self: *const Struct,
+            struct_ptr: *const anyopaque,
+            field_name: []const u8,
+        ) ?[]const u8 {
             if (self.getFieldIndex(field_name)) |i| {
                 return self.getFieldSliceIndexed(struct_ptr, i);
             }
             return null;
         }
 
-        pub fn getFieldSliceIndexed(self: *const Struct, struct_ptr: *const anyopaque, field_index: usize) []const u8 {
+        pub fn getFieldSliceIndexed(
+            self: *const Struct,
+            struct_ptr: *const anyopaque,
+            field_index: usize,
+        ) []const u8 {
             const field = self.fields[field_index];
             const field_address = @intFromPtr(struct_ptr) + field.offset;
             return util.makeSlice(u8, @ptrFromInt(field_address), field.type.size());
@@ -219,9 +231,17 @@ pub const Type = union(enum) {
             return util.makeSlice(u8, struct_ptr, self.size);
         }
 
-        pub fn format(self: Struct, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        pub fn format(
+            self: Struct,
+            comptime fmt: []const u8,
+            options: std.fmt.FormatOptions,
+            writer: anytype,
+        ) !void {
             _ = .{ fmt, options };
-            try writer.print("{}{{ .name = \"{s}\", .size = {d}, .alignment = {d}, .fields = {{ ", .{ Struct, self.name, self.size, self.alignment });
+            try writer.print(
+                "{}{{ .name = \"{s}\", .size = {d}, .alignment = {d}, .fields = {{ ",
+                .{ Struct, self.name, self.size, self.alignment },
+            );
             for (self.fields, 0..) |field, i| {
                 try writer.print("{}", .{field});
                 if (i < self.fields.len - 1) try writer.writeAll(", ");
@@ -243,9 +263,17 @@ pub const Type = union(enum) {
         alignment: usize,
         offset: usize,
 
-        pub fn format(self: StructField, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        pub fn format(
+            self: StructField,
+            comptime fmt: []const u8,
+            options: std.fmt.FormatOptions,
+            writer: anytype,
+        ) !void {
             _ = .{ fmt, options };
-            try writer.print("{}{{ .name = \"{s}\", .type_name = \"{s}\", .default_value_ptr = {*}, alignment = {d}, offset = {d} }}", .{ StructField, self.name, self.type.typeName(), self.default_value_ptr, self.alignment, self.offset });
+            try writer.print(
+                "{}{{ .name = \"{s}\", .type_name = \"{s}\", .default_value_ptr = {*}, alignment = {d}, offset = {d} }}",
+                .{ StructField, self.name, self.type.typeName(), self.default_value_ptr, self.alignment, self.offset },
+            );
         }
     };
 
@@ -253,7 +281,12 @@ pub const Type = union(enum) {
     pub const Declaration = struct {
         name: []const u8,
 
-        pub fn format(self: Declaration, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        pub fn format(
+            self: Declaration,
+            comptime fmt: []const u8,
+            options: std.fmt.FormatOptions,
+            writer: anytype,
+        ) !void {
             _ = .{ fmt, options };
             try writer.print("{}{{ .name = \"{s}\" }}", .{ Declaration, self.name });
         }

@@ -10,21 +10,13 @@ pub fn formatType(
     erased: *const anyopaque,
     writer: std.io.AnyWriter,
 ) anyerror!void {
-    const slice = util.makeSlice(u8, @ptrCast(erased), info.size());
     switch (info.*) {
-        .bool => {
-            const value = slice[0] != 0;
-            try writer.print("{}", .{value});
-        },
+        .bool => try formatBool(erased, writer),
         .int => |*t| try formatInt(t, erased, writer),
         .float => |*t| try formatFloat(t, erased, writer),
         .pointer => |*t| try formatPointer(t, erased, writer),
         .array => |*t| try formatArray(t.child, erased, t.len, writer),
-        .@"struct" => |*t| {
-            try writer.writeAll("{ ");
-            try formatStruct(t, erased, writer);
-            try writer.writeAll(" }");
-        },
+        .@"struct" => |*t| try formatStruct(t, erased, writer),
         .optional => |*t| try formatOptional(t, erased, writer),
         .@"enum" => |*t| try formatEnum(t, erased, writer),
         .@"union" => |*t| try formatUnion(t, erased, writer),
@@ -32,6 +24,14 @@ pub fn formatType(
             @panic("unimplemented");
         },
     }
+}
+
+pub fn formatBool(
+    erased: *const anyopaque,
+    writer: std.io.AnyWriter,
+) anyerror!void {
+    const bool_ptr: *const bool = @ptrCast(erased);
+    try writer.print("{}", .{bool_ptr.*});
 }
 
 pub fn formatInt(
@@ -124,6 +124,7 @@ pub fn formatStruct(
     erased: *const anyopaque,
     writer: std.io.AnyWriter,
 ) anyerror!void {
+    try writer.writeAll("{ ");
     for (info.fields, 0..) |field_info, i| {
         const field_ptr = info.getFieldPtrIndexed(erased, i);
         const option_prefix = if (field_info.type.* == .optional) "?" else "";
@@ -131,6 +132,7 @@ pub fn formatStruct(
         try formatType(field_info.type, field_ptr, writer);
         if (i < info.fields.len - 1) try writer.writeAll(", ");
     }
+    try writer.writeAll(" }");
 }
 
 pub fn formatOptional(

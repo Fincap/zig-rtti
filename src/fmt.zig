@@ -26,14 +26,7 @@ pub fn formatType(
             try writer.writeAll(" }");
         },
         .optional => |*t| try formatOptional(t, erased, writer),
-        .@"enum" => |*t| {
-            const size = t.tag_type.size();
-            if (size > 8) @panic("enum tags greater than 64 bits unsupported");
-            var value: u64 = 0;
-            std.mem.copyForwards(u8, std.mem.asBytes(&value), slice[0..size]); // TODO: test if works on big-endian
-            const variant = t.getNameFromValue(value).?;
-            try writer.print("{s}.{s}", .{ t.name, variant });
-        },
+        .@"enum" => |*t| try formatEnum(t, erased, writer),
         .@"union" => |*t| {
             if (t.hasSafetyTag()) {
                 const tag_offset = t.size / 2;
@@ -170,6 +163,20 @@ pub fn formatOptional(
     } else {
         try writer.writeAll("null");
     }
+}
+
+pub fn formatEnum(
+    info: *const Type.Enum,
+    erased: *const anyopaque,
+    writer: std.io.AnyWriter,
+) anyerror!void {
+    const size = info.size();
+    if (size > 8) @panic("enum tags greater than 64 bits unsupported");
+    const slice = util.makeSlice(u8, @ptrCast(erased), size);
+    var value: u64 = 0;
+    std.mem.copyForwards(u8, std.mem.asBytes(&value), slice[0..size]); // TODO: test if works on big-endian
+    const variant = info.getNameFromValue(value).?;
+    try writer.print("{s}.{s}", .{ info.name, variant });
 }
 
 pub fn formatSliceAsHex(slice: []const u8, writer: std.io.AnyWriter) anyerror!void {

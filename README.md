@@ -40,7 +40,7 @@ pub fn main() !void {
         number: i32,
         text: []const u8,
     };
-    const type_info = try type_registry.registerType(MyStruct);
+    const info = try type_registry.registerType(MyStruct);
 
     // Create a type-erased pointer to a new instance of our struct.
     const erased: *const anyopaque = &MyStruct{ .number = 14, .text = "hello" };
@@ -48,7 +48,7 @@ pub fn main() !void {
     // Use the library's default formatting utility functions to print out the type-erased struct's
     // values at runtime.
     const writer = std.io.getStdOut().writer().any();
-    try rtti.fmt.tryFormatStruct(&type_registry, &type_info.@"struct", &my_struct, writer);
-    // Output: number: 14, text: "hello"
+    try rtti.fmt.formatType(info, erased, writer);
+    // Output: { number: 14, text: "hello" }
 }
 ```

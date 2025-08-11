@@ -28,12 +28,12 @@ pub const float_types = .{
     f128,
 };
 
-/// Casts a many-item pointer into a slice with the given length.
+/// Casts an opaque pointer into a slice with the given length.
 ///
 /// SAFETY: no validation is done on the given length, and the returned slice is not guaranteed to
 /// point to valid memory.
-pub inline fn makeSlice(comptime T: type, ptr: [*]const T, len: usize) []const T {
-    return @as([]const T, ptr[0..len]);
+pub inline fn sliceFromOpaque(comptime T: type, ptr: *const anyopaque, len: usize) []const T {
+    return @as([*]const T, @ptrCast(ptr))[0..len];
 }
 
 /// Test if the given type is pointer sized (i.e. is a `usize` or `isize`).
@@ -48,13 +48,13 @@ pub inline fn hasMethod(comptime T: type, comptime method: []const u8) bool {
     return @hasDecl(T, method) and @typeInfo(@TypeOf(@field(T, method))) == .@"fn";
 }
 
-test "makeSlice" {
+test "sliceFromOpaque" {
     const testing = std.testing;
     const slice_data: []const u8 = &[_]u8{ 0xDE, 0xAD, 0xBE, 0xEF, 0xFA, 0xCE };
-    const slice_start: [*]const u8 = @ptrCast(slice_data);
+    const slice_ptr: *const anyopaque = slice_data.ptr;
     const slice_len = 4;
-    const new_slice = makeSlice(u8, slice_start, slice_len);
-    try testing.expectEqual(new_slice.ptr, slice_start);
+    const new_slice = sliceFromOpaque(u8, slice_ptr, slice_len);
+    try testing.expectEqual(@intFromPtr(new_slice.ptr), @intFromPtr(slice_ptr));
     try testing.expectEqual(new_slice.len, slice_len);
     try testing.expectEqualSlices(u8, slice_data[0..slice_len], new_slice);
 }

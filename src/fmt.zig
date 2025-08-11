@@ -39,7 +39,7 @@ pub fn formatInt(
     erased: *const anyopaque,
     writer: std.io.AnyWriter,
 ) anyerror!void {
-    const slice = util.makeSlice(u8, @ptrCast(erased), info.size());
+    const slice = util.sliceFromOpaque(u8, erased, info.size());
     const int_types = @typeInfo(@TypeOf(util.integer_types)).@"struct".fields;
     inline for (int_types) |int_type| {
         const T: type = @field(util.integer_types, int_type.name);
@@ -57,7 +57,7 @@ pub fn formatFloat(
     erased: *const anyopaque,
     writer: std.io.AnyWriter,
 ) anyerror!void {
-    const slice = util.makeSlice(u8, @ptrCast(erased), info.size());
+    const slice = util.sliceFromOpaque(u8, erased, info.size());
     const float_types = @typeInfo(@TypeOf(util.float_types)).@"struct".fields;
     inline for (float_types) |float_type| {
         const T: type = @field(util.float_types, float_type.name);
@@ -75,7 +75,7 @@ pub fn formatPointer(
     erased: *const anyopaque,
     writer: std.io.AnyWriter,
 ) anyerror!void {
-    const slice = util.makeSlice(u8, @ptrCast(erased), info.sizeInBytes());
+    const slice = util.sliceFromOpaque(u8, erased, info.sizeInBytes());
     const child_ptr: [*]const u8 = @ptrFromInt(std.mem.bytesToValue(usize, slice[0..8]));
     switch (info.size) {
         .one, .c => {
@@ -86,7 +86,7 @@ pub fn formatPointer(
             const len = std.mem.bytesToValue(usize, slice[8..16]);
             if (std.mem.eql(u8, info.child.typeName(), "u8")) {
                 // Interpret u8 slice as string
-                const string = util.makeSlice(u8, child_ptr, len);
+                const string = util.sliceFromOpaque(u8, child_ptr, len);
                 try writer.print("\"{s}\"", .{string});
             } else {
                 try formatArray(info.child, child_ptr, len, writer);
@@ -138,7 +138,7 @@ pub fn formatOptional(
     erased: *const anyopaque,
     writer: std.io.AnyWriter,
 ) anyerror!void {
-    const slice = util.makeSlice(u8, @ptrCast(erased), info.size());
+    const slice = util.sliceFromOpaque(u8, erased, info.size());
     const option_offset: usize = info.size() / 2;
     const is_some = slice[option_offset] != 0;
     if (is_some) {
@@ -155,7 +155,7 @@ pub fn formatEnum(
 ) anyerror!void {
     const size = info.size();
     if (size > 8) @panic("enum tags greater than 64 bits unsupported");
-    const slice = util.makeSlice(u8, @ptrCast(erased), size);
+    const slice = util.sliceFromOpaque(u8, erased, size);
     var value: u64 = 0;
     std.mem.copyForwards(u8, std.mem.asBytes(&value), slice[0..size]); // TODO: test if works on big-endian
     const variant = info.getNameFromValue(value).?;
@@ -167,7 +167,7 @@ pub fn formatUnion(
     erased: *const anyopaque,
     writer: std.io.AnyWriter,
 ) anyerror!void {
-    const slice = util.makeSlice(u8, @ptrCast(erased), info.size);
+    const slice = util.sliceFromOpaque(u8, erased, info.size);
     if (info.hasSafetyTag()) {
         const tag_offset = info.size / 2;
         var tag: usize = 0;

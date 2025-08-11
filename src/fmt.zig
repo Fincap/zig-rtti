@@ -45,7 +45,7 @@ pub fn formatInt(
         const T: type = @field(util.integer_types, int_type.name);
         const T_info = @typeInfo(T).int;
         if (info.bits == T_info.bits and info.signedness == T_info.signedness and info.is_pointer_sized == util.isPointerSized(T)) {
-            const number = util.numberFromBytes(T, slice);
+            const number = std.mem.bytesToValue(T, slice);
             try writer.print("{d}", .{number});
             break;
         }
@@ -63,7 +63,7 @@ pub fn formatFloat(
         const T: type = @field(util.float_types, float_type.name);
         const T_info = @typeInfo(T).float;
         if (info.bits == T_info.bits) {
-            const number = util.numberFromBytes(T, slice);
+            const number = std.mem.bytesToValue(T, slice);
             try writer.print("{d}", .{number});
             break;
         }
@@ -76,16 +76,14 @@ pub fn formatPointer(
     writer: std.io.AnyWriter,
 ) anyerror!void {
     const slice = util.makeSlice(u8, @ptrCast(erased), info.sizeInBytes());
+    const child_ptr: [*]const u8 = @ptrFromInt(std.mem.bytesToValue(usize, slice[0..8]));
     switch (info.size) {
         .one, .c => {
-            const child_ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
             try writer.writeAll("*");
             try formatType(info.child, child_ptr, writer);
         },
         .slice => {
-            const child_ptr: [*]const u8 = @ptrFromInt(util.numberFromBytes(usize, slice[0..8]));
-            const len = util.numberFromBytes(usize, slice[8..16]);
-
+            const len = std.mem.bytesToValue(usize, slice[8..16]);
             if (std.mem.eql(u8, info.child.typeName(), "u8")) {
                 // Interpret u8 slice as string
                 const string = util.makeSlice(u8, child_ptr, len);

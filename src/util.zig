@@ -28,14 +28,6 @@ pub const float_types = .{
     f128,
 };
 
-/// Reinterprets the given `slice` argument into raw bytes representing the given type.
-///
-/// TODO: rename `reinterpretCast`?
-pub inline fn numberFromBytes(comptime T: type, slice: []const u8) T {
-    const bytes: *const [@sizeOf(T)]u8 = @ptrCast(@alignCast(slice));
-    return @bitCast(bytes.*);
-}
-
 /// Casts a many-item pointer into a slice with the given length.
 ///
 /// SAFETY: no validation is done on the given length, and the returned slice is not guaranteed to

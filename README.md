@@ -29,7 +29,7 @@ type information can be utilized.
 Add zig-rtti as a dependency by running the following command in your project root:
 
 ```
-zig fetch --save git+https://github.com/Fincap/zig-rtti#v0.1.0
+zig fetch --save git+https://github.com/Fincap/zig-rtti#v0.1.1
 ```
 
 Then updating your `build.zig` to include the following:

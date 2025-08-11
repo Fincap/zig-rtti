@@ -80,7 +80,7 @@ pub const Type = union(enum) {
         }
 
         pub fn size(self: Int) usize {
-            return util.bitsToBytesCeil(self.bits);
+            return std.math.ceilPowerOfTwoAssert(usize, self.bits / 8);
         }
     };
 
@@ -100,7 +100,7 @@ pub const Type = union(enum) {
         }
 
         pub fn size(self: Float) usize {
-            return util.bitsToBytesCeil(self.bits);
+            return std.math.ceilPowerOfTwoAssert(usize, self.bits / 8);
         }
     };
 

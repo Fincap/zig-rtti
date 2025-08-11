@@ -56,14 +56,6 @@ pub inline fn hasMethod(comptime T: type, comptime method: []const u8) bool {
     return @hasDecl(T, method) and @typeInfo(@TypeOf(@field(T, method))) == .@"fn";
 }
 
-/// For a given number of bits, returns the power-of-two number of bytes required to store a value
-/// of the given bit width.
-///
-/// TODO: redundant with `std.math.ceilPowerOfTwo`
-pub inline fn bitsToBytesCeil(bits: usize) usize {
-    return (bits + 7) / 8;
-}
-
 test "makeSlice" {
     const testing = std.testing;
     const slice_data: []const u8 = &[_]u8{ 0xDE, 0xAD, 0xBE, 0xEF, 0xFA, 0xCE };

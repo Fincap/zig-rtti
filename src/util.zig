@@ -1,5 +1,8 @@
 const std = @import("std");
 
+/// Comptime tuple containing all built-in standard integer primitive types.
+///
+/// Can be used to implement a comptime iterator over integer types.
 pub const integer_types = .{
     isize,
     i8,
@@ -15,6 +18,9 @@ pub const integer_types = .{
     u128,
 };
 
+/// Comptime tuple containing all built-in floating point primitive types.
+///
+/// Can be used to implement a comptime iterator over float types.
 pub const float_types = .{
     f16,
     f32,
@@ -22,62 +28,22 @@ pub const float_types = .{
     f128,
 };
 
+/// Reinterprets the given `slice` argument into raw bytes representing the given type.
+///
+/// TODO: rename `reinterpretCast`?
 pub inline fn numberFromBytes(comptime T: type, slice: []const u8) T {
     const bytes: *const [@sizeOf(T)]u8 = @ptrCast(@alignCast(slice));
     return @bitCast(bytes.*);
 }
 
+/// Casts a many-item pointer into a slice with the given length.
 pub inline fn makeSlice(comptime T: type, ptr: [*]const T, len: usize) []const T {
     return @as([]const T, ptr[0..len]);
 }
 
-pub fn runtimeSizeOf(type_name: []const u8) ?usize {
-    const int_variants = @typeInfo(@TypeOf(integer_types)).@"struct".fields;
-    inline for (int_variants) |info| {
-        const T: type = @field(integer_types, info.name);
-        if (std.mem.eql(u8, type_name, @typeName(T))) {
-            return @sizeOf(T);
-        }
-    }
-    const float_variants = @typeInfo(@TypeOf(float_types)).@"struct".fields;
-    inline for (float_variants) |info| {
-        const T: type = @field(float_types, info.name);
-        if (std.mem.eql(u8, type_name, @typeName(T))) {
-            return @sizeOf(T);
-        }
-    }
-    if (isPointer(type_name)) {
-        return @sizeOf(usize);
-    }
-    if (isSlice(type_name)) {
-        return 2 * @sizeOf(usize);
-    }
-
-    if (isOptional(type_name)) {
-        if (runtimeSizeOf(type_name[1..])) |sub_size| {
-            return 2 * sub_size;
-        }
-    }
-    return null;
-}
-
+/// Test if the given type is pointer sized (i.e. is a `usize` or `isize`).
 pub inline fn isPointerSized(comptime T: type) bool {
     return T == usize or T == isize;
-}
-
-/// Given a type name, returns if the type is a pointer. This does not check any child types.
-pub fn isPointer(type_name: []const u8) bool {
-    return std.mem.startsWith(u8, type_name, "*");
-}
-
-/// Given a type name, returns if the type is a slice. This does not check any child types.
-pub fn isSlice(type_name: []const u8) bool {
-    return std.mem.startsWith(u8, type_name, "[]");
-}
-
-/// Given a type name, returns if the type is an optional. This does not check any child types.
-pub fn isOptional(type_name: []const u8) bool {
-    return std.mem.startsWith(u8, type_name, "?");
 }
 
 /// Returns true if the given struct, enum, union or opaque has a method of the given name.

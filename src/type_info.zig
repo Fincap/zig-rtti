@@ -5,19 +5,6 @@ const rtti = @import("root.zig");
 const TypeRegistry = rtti.TypeRegistry;
 const util = rtti.util;
 
-pub const TypeId = usize;
-
-/// Returns a unique identifier for the given type, which can be used at runtime.
-pub fn typeId(comptime T: type) TypeId {
-    const H = struct {
-        const byte: u8 linksection(section_name ++ "1") = 0;
-        const _ = T;
-    };
-    return &H.byte - &@"RTTI_Types.head";
-}
-const section_name = ".bss.RTTI_Types";
-const @"RTTI_Types.head": u8 linksection(section_name ++ "0") = 0;
-
 /// Runtime equivalent of `std.builtin.Type`.
 ///
 /// Excludes any comptime types that cannot be meaningfully represented at runtime.

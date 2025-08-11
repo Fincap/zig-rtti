@@ -1,6 +1,8 @@
 pub const fmt = @import("fmt.zig");
-pub const type_info = @import("type_info.zig");
-pub const Type = type_info.Type;
+pub const Type = @import("type_info.zig").Type;
+const type_id = @import("type_id.zig");
+pub const getTypeId = type_id.getTypeId;
+pub const TypeId = type_id.TypeId;
 pub const TypeRegistry = @import("TypeRegistry.zig");
 pub const util = @import("util.zig");
 

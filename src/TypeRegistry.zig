@@ -3,8 +3,8 @@ const Allocator = std.mem.Allocator;
 
 const rtti = @import("root.zig");
 const Type = rtti.Type;
-const TypeId = rtti.type_info.TypeId;
-const typeId = rtti.type_info.typeId;
+const TypeId = rtti.TypeId;
+const getTypeId = rtti.getTypeId;
 const util = rtti.util;
 const StableMap = @import("stable_map.zig").StableMap;
 
@@ -35,7 +35,7 @@ pub fn deinit(self: *Self) void {
 /// Pointers to returned struct is owned by the registry, and is expected to live for the
 /// remainder of the registry's lifetime.
 pub fn registerType(self: *Self, comptime T: type) !*Type {
-    const type_id = typeId(T);
+    const type_id = getTypeId(T);
     const entry = try self.registered_types.getOrPut(self.allocator, type_id);
     if (entry.found_existing) {
         return entry.value_ptr;
@@ -72,12 +72,8 @@ pub fn getTypeInfo(self: *const Self, type_name: []const u8) ?*Type {
     return null;
 }
 
-pub fn getTypeId(self: *const Self, type_name: []const u8) ?TypeId {
-    return self.type_names.get(type_name);
-}
-
 pub fn isTypeRegistered(self: *const Self, comptime T: type) bool {
-    return self.registered_types.contains(typeId(T));
+    return self.registered_types.contains(getTypeId(T));
 }
 
 fn registerBool(self: *Self, comptime T: type) !Type {

@@ -59,14 +59,12 @@ pub fn registerType(self: *Self, comptime T: type) !*Type {
         .@"fn" => @compileError("unimplemented"),
         else => @compileError("cannot register comptime-only type " ++ @typeName(T)),
     };
-
     return self.registered_types.getPtr(type_id).?; // Re-obtain pointer in case any other types were recursively registered.
 
 }
 
 pub fn getTypeInfo(self: *const Self, type_name: []const u8) ?*Type {
-    const maybe_type_id = self.getTypeId(type_name);
-    if (maybe_type_id) |type_id| {
+    if (self.type_names.get(type_name)) |type_id| {
         return self.registered_types.getPtr(type_id);
     }
     return null;
@@ -243,25 +241,21 @@ fn unsupportedType(comptime name: []const u8) noreturn {
     @compileError("runtime type information not supported for " ++ name);
 }
 
-test "TypeRegistry register struct" {
-    const expect = std.testing.expect;
-    const allocator = std.testing.allocator;
-
+test "TypeRegistry" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
     var registry = Self.init(allocator);
     defer registry.deinit();
 
     const TestEnum = enum { a, b, c };
-
     const TestUnion = union(enum) {
         float: f32,
         char: u8,
         empty,
     };
-
     const InnerStruct = struct {
         text: []const u8,
     };
-
     const TestStruct = struct {
         is_true: bool = false,
         number: i32 = 123,
@@ -277,14 +271,19 @@ test "TypeRegistry register struct" {
     };
 
     const runtime_type = try registry.registerType(TestStruct);
-    try expect(runtime_type.* == .@"struct");
+    try testing.expect(runtime_type.* == .@"struct");
+    try testing.expectEqual(registry.type_names.size, registry.registered_types.count());
+    try testing.expectEqual(16, registry.registered_types.count());
+    try testing.expect(registry.isTypeRegistered(TestStruct));
+    try testing.expectEqual(runtime_type, registry.getTypeInfo(@typeName(TestStruct)).?);
 
     const comptime_info = @typeInfo(TestStruct).@"struct";
     const runtime_info = runtime_type.@"struct";
 
-    try expect(std.mem.eql(u8, runtime_info.name, @typeName(TestStruct)));
-    try expect(runtime_info.fields.len == comptime_info.fields.len);
-    try expect(runtime_info.decls.len == comptime_info.decls.len);
-    try expect(runtime_info.size == @sizeOf(TestStruct));
-    try expect(runtime_info.alignment == @alignOf(TestStruct));
+    try testing.expectEqualStrings(@typeName(TestStruct), runtime_info.name);
+    try testing.expectEqual(@sizeOf(TestStruct), runtime_info.size);
+    try testing.expectEqual(@alignOf(TestStruct), runtime_info.alignment);
+    try testing.expectEqual(comptime_info.layout, .auto);
+    try testing.expectEqual(comptime_info.fields.len, runtime_info.fields.len);
+    try testing.expectEqual(comptime_info.decls.len, runtime_info.decls.len);
 }

@@ -41,13 +41,6 @@ pub inline fn isPointerSized(comptime T: type) bool {
     return T == usize or T == isize;
 }
 
-/// Returns true if the given struct, enum, union or opaque has a method of the given name.
-pub inline fn hasMethod(comptime T: type, comptime method: []const u8) bool {
-    const t = @typeInfo(T);
-    if (t != .@"struct" and t != .@"enum" and t != .@"union" and t != .@"opaque") return false;
-    return @hasDecl(T, method) and @typeInfo(@TypeOf(@field(T, method))) == .@"fn";
-}
-
 test "sliceFromOpaque" {
     const testing = std.testing;
     const slice_data: []const u8 = &[_]u8{ 0xDE, 0xAD, 0xBE, 0xEF, 0xFA, 0xCE };
@@ -71,28 +64,4 @@ test "isPointerSized" {
 
     try testing.expect(isPointerSized(isize));
     try testing.expect(isPointerSized(usize));
-}
-
-test "hasMethod" {
-    const testing = std.testing;
-    const S = struct {
-        pub fn testMethod() void {}
-    };
-    const E = enum(u8) {
-        _,
-        pub fn testMethod() void {}
-    };
-    const U = union {
-        _: void,
-        pub fn testMethod() void {}
-    };
-    try testing.expect(hasMethod(S, "testMethod"));
-    try testing.expect(!hasMethod(S, "noMethod"));
-    try testing.expect(hasMethod(E, "testMethod"));
-    try testing.expect(!hasMethod(E, "noMethod"));
-    try testing.expect(hasMethod(U, "testMethod"));
-    try testing.expect(!hasMethod(U, "noMethod"));
-
-    try testing.expect(!hasMethod(i32, "testMethod"));
-    try testing.expect(!hasMethod(bool, "testMethod"));
 }

@@ -18,13 +18,19 @@ pub const Config = struct {
 /// through a double dereference. Iterating through values will be a potential cache miss on chunk
 /// boundaries.
 ///
-/// TODO: create variants for [Auto/String]StableMap[Unmanaged], mirroring std HashMap types.
+/// Values cannot be removed from the map as any ordered or swap remove operation would violate
+/// pointer stability.
+///
+/// The backing storage is similar to `std.SegmentedList`, however the "shelves" in the StableMap
+/// are of fixed sized rather than growing in size by powers-of-two as the SegmentedList does.
+///
+/// TODO: create variants for [Auto/String]StableMap, mirroring std HashMap types.
 /// TODO: add more functions to access methods of underlying dictionary
 pub fn StableMap(comptime K: type, comptime V: type, comptime config: Config) type {
     return struct {
         const Self = @This();
 
-        chunks: std.ArrayListUnmanaged(Chunk) = .empty,
+        chunks: std.ArrayList(Chunk) = .empty,
         keys: std.AutoHashMapUnmanaged(K, ValueIndex) = .empty,
 
         pub const entries_per_chunk = config.chunk_size / @sizeOf(V);

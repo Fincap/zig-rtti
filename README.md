@@ -85,3 +85,11 @@ const TypeErasedObject = struct {
     info: *rtti.Type,
 };
 ```
+
+## Versions
+
+| Zig version | zig-rtti version |
+|-------------|------------------|
+| 0.15.1      | master           |
+| 0.14.1      | 0.1.1            |
+| 0.14.1      | 0.1              |

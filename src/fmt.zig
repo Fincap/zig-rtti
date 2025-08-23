@@ -8,7 +8,7 @@ const util = rtti.util;
 pub fn formatType(
     info: *const Type,
     erased: *const anyopaque,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     switch (info.*) {
         .bool => try formatBool(erased, writer),
@@ -28,7 +28,7 @@ pub fn formatType(
 
 pub fn formatBool(
     erased: *const anyopaque,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     const bool_ptr: *const bool = @ptrCast(erased);
     try writer.print("{}", .{bool_ptr.*});
@@ -37,7 +37,7 @@ pub fn formatBool(
 pub fn formatInt(
     info: *const Type.Int,
     erased: *const anyopaque,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     const slice = util.sliceFromOpaque(u8, erased, info.size());
     const int_types = @typeInfo(@TypeOf(util.integer_types)).@"struct".fields;
@@ -55,7 +55,7 @@ pub fn formatInt(
 pub fn formatFloat(
     info: *const Type.Float,
     erased: *const anyopaque,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     const slice = util.sliceFromOpaque(u8, erased, info.size());
     const float_types = @typeInfo(@TypeOf(util.float_types)).@"struct".fields;
@@ -73,7 +73,7 @@ pub fn formatFloat(
 pub fn formatPointer(
     info: *const Type.Pointer,
     erased: *const anyopaque,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     const slice = util.sliceFromOpaque(u8, erased, info.sizeInBytes());
     const child_ptr: [*]const u8 = @ptrFromInt(std.mem.bytesToValue(usize, slice[0..8]));
@@ -102,7 +102,7 @@ pub fn formatArray(
     child_type: *const Type,
     ptr: *const anyopaque,
     len: usize,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     const array_ptr: [*]const u8 = @ptrCast(ptr);
     const elem_size = child_type.size();
@@ -120,7 +120,7 @@ pub fn formatArray(
 pub fn formatStruct(
     info: *const Type.Struct,
     erased: *const anyopaque,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     try writer.writeAll("{ ");
     for (info.fields, 0..) |field_info, i| {
@@ -136,7 +136,7 @@ pub fn formatStruct(
 pub fn formatOptional(
     info: *const Type.Optional,
     erased: *const anyopaque,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     const slice = util.sliceFromOpaque(u8, erased, info.size());
     const option_offset: usize = info.size() / 2;
@@ -151,7 +151,7 @@ pub fn formatOptional(
 pub fn formatEnum(
     info: *const Type.Enum,
     erased: *const anyopaque,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     const size = info.size();
     if (size > 8) @panic("enum tags greater than 64 bits unsupported");
@@ -165,7 +165,7 @@ pub fn formatEnum(
 pub fn formatUnion(
     info: *const Type.Union,
     erased: *const anyopaque,
-    writer: std.io.AnyWriter,
+    writer: *std.Io.Writer,
 ) anyerror!void {
     const slice = util.sliceFromOpaque(u8, erased, info.size);
     if (info.hasSafetyTag()) {
@@ -186,7 +186,7 @@ pub fn formatUnion(
     }
 }
 
-pub fn formatSliceAsHex(slice: []const u8, writer: std.io.AnyWriter) anyerror!void {
+pub fn formatSliceAsHex(slice: []const u8, writer: *std.Io.Writer) anyerror!void {
     for (slice, 0..) |byte, i| {
         try writer.print("{X:0>2}", .{byte});
         if (i < slice.len - 1) {

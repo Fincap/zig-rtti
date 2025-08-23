@@ -37,5 +37,10 @@ pub fn main() !void {
 
     const test_struct = TestStruct{};
     const info = try registry.registerType(TestStruct);
-    try rtti.fmt.formatType(info, &test_struct, std.io.getStdOut().writer().any());
+
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
+    try rtti.fmt.formatType(info, &test_struct, stdout);
+    try stdout.flush();
 }

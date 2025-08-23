@@ -14,9 +14,20 @@ const root = @import("root");
 pub const options: Options = if (@hasDecl(root, "rtti_options")) root.rtti_options else .{};
 
 pub const Options = struct {
-    /// Enables type ID generation via incrementing values in custom linker sections. If disabled,
-    /// then type IDs will be non-contiguous and non-sequential.
-    enable_linksection_typeid: bool = true,
+    type_id_generation: TypeIdGeneration = .linksections,
+};
+
+pub const TypeIdGeneration = enum {
+    /// Uses linksection to assign each type a unique offset-based ID at compile time, on the
+    /// assumption that section `.bss.RTTI_Types0` will appear before `.bss.RTTI_Types1` in memory,
+    /// however this behaviour is *not* guaranteed by the linker and may result in non-contiguous
+    /// and/or non-sequential IDs being generated.
+    linksections,
+    /// Type Ids will be generated from pointers into the program's `.bss` section at runtime, which
+    /// will result in numbers which are clustered together but not necessarily contiguous.
+    clustered,
+    /// Type Ids will be generated from the 64-bit FNV-1a hash of the type name.
+    hash,
 };
 
 test {

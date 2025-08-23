@@ -22,8 +22,8 @@ because the `TypeRegistry` stores all `Type` instances at [stable addresses](src
 and the registered types are assumed to remain valid for the lifetime of the registry.
 
 The library also includes a [formatter module](src/fmt.zig) that can inspect an opaque pointer and 
-write a human-readable representation to any `std.io.AnyWriter`, and is an example of how runtime 
-type information can be utilized.
+write a human-readable representation to any `std.Io.Writer`, and is an example of how runtime type
+information can be utilized.
 
 ## Installation
 Add zig-rtti as a dependency by running the following command in your project root:
@@ -51,6 +51,12 @@ const std = @import("std");
 const rtti = @import("rtti");
 
 pub fn main() !void {
+    // Initialize stdout
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
+    // Initialize allocator
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const allocator = arena.allocator();
 
@@ -69,9 +75,10 @@ pub fn main() !void {
     const erased: *const anyopaque = &MyStruct{ .number = 14, .text = "hello" };
 
     // Use the built-in formatter to print the type-erased struct’s fields at runtime.
-    const writer = std.io.getStdOut().writer().any();
-    try rtti.fmt.formatType(info, erased, writer);
-    // Output: { number: 14, text: "hello" }
+    try rtti.fmt.formatType(info, erased, stdout);
+    try stdout.flush();
+    // Output:
+    // { number: 14, text: "hello" }
 }
 ```
 
